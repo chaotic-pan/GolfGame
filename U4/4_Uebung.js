@@ -223,7 +223,7 @@ function resetB(){
 }
 
 function newB(){
-    // wtf JS????
+    // wtf JS???? lemme just compare a goddamn array
     if (JSON.stringify(ballPos) === "[0,0]") {
         state = states.PLANE_1.TOL;
     }
