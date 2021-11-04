@@ -61,7 +61,7 @@ let timescale = 1;
 
 let dt = timescale/fRate;
 let t=0;
-let v0= 2;
+let v0= 2/ratio;
 let v;
 let b = (P[2][1]-P[1][1])/(P[2][0]-P[1][0]);
 let g = 9.81;

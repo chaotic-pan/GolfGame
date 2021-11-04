@@ -40,15 +40,17 @@ const states = {
 };
 let state = states.OFF;
 
-v0=2;
+let v0=2;
+let g = 9.81;
+let dt = 1/frmRate;
 
 function setup() {								/* prepare program */
   	createCanvas(windowWidth, windowHeight);
 	evaluateConstants(90, 90);					// Erzeuge elementare Konstanten
 	M = 0.85*canvasWidth/playgroundWidth; 		// dynamischer Maßstab
-	
-	xi0 = 25.0*canvasWidth/29.7;				// Koordinatenursprung (willkürlich gewählt)
-	yi0 = 9*canvasHeight/21.0;
+
+    xi0 = 25.0*canvasWidth/29.7;				// Koordinatenursprung (willkürlich gewählt)
+    yi0 = 11*canvasHeight/21.0;
 
 	// Starteinstellungen
 	xPutter = 0;								// Startlage Putter bezügl. "0"
@@ -56,7 +58,7 @@ function setup() {								/* prepare program */
 	radiusPutter = lengthPutter;
 
 	// Startlage Golfball
-	ballPos = [0,  dBall/2];
+	ballPos = [0,  0];
 }
 
 function draw() {
@@ -75,27 +77,26 @@ function draw() {
         rectMode(CORNER)
 		textSize(2.0*fontSize);     							// fontSize responsive (in evaluateConstants.js)
 		fill(green);	// NEW-Button
-		rect(79*gridX, 50*gridY, buttonWidth, buttonHeight);      	// gridX, gridY, buttonWidth, buttonHeight: responsive (in evaluateConstants.js)
+		rect(79*gridX, 65*gridY, buttonWidth, buttonHeight);      	// gridX, gridY, buttonWidth, buttonHeight: responsive (in evaluateConstants.js)
 		fill(red);	// RESET-Button
-        rect(5.5*gridX, 50*gridY, buttonWidth, buttonHeight);      	// gridX, gridY responsive (in evaluateConstants.js)
+        rect(5.35*gridX, 65*gridY, buttonWidth, buttonHeight);      	// gridX, gridY responsive (in evaluateConstants.js)
 
 		fill(255);
         strokeWeight(0);
-		text("NEW", 79*gridX+0.5*buttonWidth, 50*gridY+0.5*buttonHeight);
-		text("RESET", 5.5*gridX+0.5*buttonWidth, 50*gridY+0.5*buttonHeight);
+		text("NEW", 79*gridX+0.5*buttonWidth, 65*gridY+0.5*buttonHeight);
+		text("RESET", 5.35*gridX+0.5*buttonWidth, 65*gridY+0.5*buttonHeight);
 
 		if (mouseIsPressed) {
                 if (mouseX>=79*gridX && mouseX<=79*gridX+buttonWidth &&
-                    mouseY>=50*gridY && mouseY<=50*gridY+buttonHeight){
+                    mouseY>=65*gridY && mouseY<=65*gridY+buttonHeight){
                     newB();
                 }
-                if (mouseX>=5.5*gridX && mouseX<=5.5*gridX+buttonWidth &&
-                    mouseY>=50*gridY && mouseY<=50*gridY+buttonHeight){
+                if (mouseX>=5.35*gridX && mouseX<=5.35*gridX+buttonWidth &&
+                    mouseY>=65*gridY && mouseY<=65*gridY+buttonHeight){
                     resetB();
                 }
             }
 	pop();
-		
 		
 /* calculation */
     if (state===states.PLANE_1.TOL && ballPos[0]>=P[1][0]) {
@@ -103,6 +104,7 @@ function draw() {
             ball0=ballPos.slice();
             t=0;
             state = states.SLOPE_1;
+            console.log("oki")
         }
         if (state===states.SLOPE_1 && v<=0) {
             ball0=ballPos.slice();
@@ -137,8 +139,8 @@ function draw() {
                 /*v = -((g * Math.sin(b)) * (t*t)/2) + v0 * t;
                 ballPos[0] = v + ball0[0];
                 ballPos[1] = v * b;*/
-                vy = v0y - g * dt;
-                ballPos[0] = ball0[0] + v0x*dt;
+                vy = v0 - g * dt;
+                ballPos[0] = ball0[0] + v0*dt;
                 ballPos[1] = ball0[1] + vy*dt;
                 break;
             }
@@ -147,13 +149,14 @@ function draw() {
 /* display */
 	push();
 	translate(xi0, yi0);
-	scale(1, -1);
+	scale(-1, -1);
 	    // Playground darstellen
 		playGround();
 
         // Golfer
 		push();
 		// Verschieben in Drehpunkt
+        scale(-1, 1);
 		translate(0, (lengthPutter + dPutter/2)*M);
 		rotate(PI/10);
 		    // Drehpunkt
@@ -175,7 +178,8 @@ function draw() {
 		// Golfball
 		fill(240);
 		strokeWeight(1);
-		ellipse(ballPos[0]*M, ballPos[1]*M, dBall*M);
+        ellipse(ballPos[0]*M, (ballPos[1]+dBall/2)*M, dBall*M);
+
 
         // markiert den Nullpunkt des Koordinatensystems
 		push();
@@ -189,20 +193,24 @@ function draw() {
 
 function resetB(){
     console.log("reset");
-    //state=states.OFF;
-    //ballPos = [0, 0];
+    state=states.OFF;
+    ballPos = [0, 0];
 }
 
 function newB(){
     console.log("new");
     // wtf JS???? lemme just compare a goddamn array
-    //if (JSON.stringify(ballPos) === "[0,0]") {
+    if (JSON.stringify(ballPos) === "[0,0]") {
         state = states.PLANE_1.TOL;
-    //}
+    }
 }
 
 function windowResized() {						/* responsive design */
   canvasWidth = window.innerWidth;
   canvasHeight = window.innerHeight;
   resizeCanvas(windowWidth, windowHeight);
+    M = 0.85*canvasWidth/playgroundWidth;
+    xi0 = 25.0*canvasWidth/29.7;
+    yi0 = 11*canvasHeight/21.0;
+    evaluateConstants();
 }
