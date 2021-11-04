@@ -61,7 +61,7 @@ let timescale = 1;
 
 let dt = timescale/fRate;
 let t=0;
-let v0= 2;
+let v0= 2/ratio;
 let v;
 let b = (P[2][1]-P[1][1])/(P[2][0]-P[1][0]);
 let g = 9.81;
@@ -73,7 +73,9 @@ const states = {
         TOL: "1. Ebene, to the left",
         TOR: "1. Ebene, to the right"
     },
-    SLOPE_1: "1. schiefe Ebene"
+    SLOPE_1: "1. schiefe Ebene",
+    THROW: "schräger Wurf"
+
 };
 let state = states.OFF;
 
@@ -143,11 +145,20 @@ function draw() {							/* here is the dynamic part to put */
         t=0;
         state = states.SLOPE_1;
     }
-    if (state===states.SLOPE_1 && v<=0) {
+    if (state===states.SLOPE_1 && ballPos[0]>=P[2][0]) {
+        ballPos=P[2].slice();
+        ball0=ballPos.slice();
+        t=0;
+        v= v0 * Math.sin(b);
+        state = states.THROW;
+    }
+    /*if (state===states.SLOPE_1 && ballPos[0]>=P[2][0]) {
         ball0=ballPos.slice();
         t=0
         state = states.PLANE_1.TOR;
-    }
+    }*/
+
+
     if (state===states.PLANE_1.TOR && ballPos[0]<=P[0][0]) {
         ballPos=P[0].slice();
         state = states.OFF;
@@ -177,6 +188,12 @@ function draw() {							/* here is the dynamic part to put */
             v = -((g * Math.sin(b)) * (t*t)/2) + v0 * t;
             ballPos[0] = v + ball0[0];
             ballPos[1] = v * b;
+            break;
+        }
+        case states.THROW: {
+            v = v - g*dt;
+            ballPos[0] = ballPos[0] + v0 * dt;
+            ballPos[1] = ballPos[1] + v * dt;
             break;
         }
     }
