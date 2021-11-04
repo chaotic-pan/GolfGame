@@ -60,10 +60,9 @@ let fRate = 50;
 let timescale = 1;
 
 let dt = timescale/fRate;
-let t=0;
 let v0= 2/ratio;
-let v;
-let b = (P[2][1]-P[1][1])/(P[2][0]-P[1][0]);
+let v0X; let v0Y; let vY;
+let b = Math.atan(P[2][1]-P[1][1])/(P[2][0]-P[1][0]);
 let g = 9.81;
 
 //state machine
@@ -139,61 +138,58 @@ function draw() {							/* here is the dynamic part to put */
     }
 
     /* calculations */
-    if (state===states.PLANE_1.TOL && ballPos[0]>=P[1][0]) {
-        ballPos=P[1].slice();
-        ball0=ballPos.slice();
-        t=0;
-        state = states.SLOPE_1;
-    }
-    if (state===states.SLOPE_1 && ballPos[0]>=P[2][0]) {
-        ballPos=P[2].slice();
-        ball0=ballPos.slice();
-        t=0;
-        v= v0 * Math.sin(b);
-        state = states.THROW;
-    }
-    /*if (state===states.SLOPE_1 && ballPos[0]>=P[2][0]) {
-        ball0=ballPos.slice();
-        t=0
-        state = states.PLANE_1.TOR;
-    }*/
-
 
     if (state===states.PLANE_1.TOR && ballPos[0]<=P[0][0]) {
         ballPos=P[0].slice();
         state = states.OFF;
     }
+    if (state===states.SLOPE_1 && ballPos[0]<=P[1][0]) {
+        ball0=ballPos.slice();
+        state = states.PLANE_1.TOR;
+    }
+    if (state===states.PLANE_1.TOL && ballPos[0]>=P[1][0]) {
+        ballPos=P[1].slice();
+        ball0=ballPos.slice();
+        state = states.SLOPE_1;
+    }
+    if (state===states.SLOPE_1 && ballPos[0]>=P[2][0]) {
+        ballPos=P[2].slice();
+        ball0=ballPos.slice();
+        v0X= v0 * Math.cos(b);
+        v0Y = v0 * Math.sin(b);
+        vY = v0Y -g * dt;
+        state = states.THROW;
+    }
+
+
+
+
 
     switch (state) {
         case states.OFF: {
-            //console.log(state);
+            console.log(state);
             ball0=ballPos.slice();
-            t=0;
-            v = v0;
             break;
         }
         case states.PLANE_1.TOL:
         case states.PLANE_1.TOR:{
-            //console.log(state);
+            console.log(state);
             let d;
             if (state===states.PLANE_1.TOL) d=1;
             else d=-1;
-            t= t+ dt;
-            ballPos[0] = ball0[0] +d*(v0 * t);
+            ballPos[0] = ballPos[0] +d*(v0 * dt);
             break;
         }
         case states.SLOPE_1: {
-            //console.log(state);
-            t= t+ dt;
-            v = -((g * Math.sin(b)) * (t*t)/2) + v0 * t;
-            ballPos[0] = v + ball0[0];
-            ballPos[1] = v * b;
+            console.log(state);
+            ballPos[0] = ballPos[0] + v0*Math.cos(b) * dt;
+            ballPos[1] = ballPos[1] + g*Math.sin(b) *  dt;
             break;
         }
         case states.THROW: {
-            v = v - g*dt;
-            ballPos[0] = ballPos[0] + v0 * dt;
-            ballPos[1] = ballPos[1] + v * dt;
+            ballPos[0] = ballPos[0] + v0X * dt;
+            vY = vY -g*dt;
+            ballPos[1] = ballPos[1] + vY * dt;
             break;
         }
     }
