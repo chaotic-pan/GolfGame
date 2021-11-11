@@ -58,21 +58,23 @@ let fRate = 50;
 let timescale = 1;
 let dt = timescale/fRate;
 let v0= 2/ratio;
+let v; let s;
 let v0X; let v0Y; let vY;
 // angle of slopes [Grass, Sand]
 let beta = [Math.atan(P[2][1]-P[1][1])/(P[2][0]-P[1][0]),
-            Math.atan(P[2][1]-P[1][1])/(P[2][0]-P[1][0])];
+            Math.atan(P[2][1]-P[1][1])/(P[2][0]-P[1][0]),
+            Math.atan(P[1][1]-P[0][1])/(P[1][0]-P[0][0])];
 let g = 9.81;
+let g1;
 // Coefficient of rolling friction [Grass, Sand]
-let cR = [0.2, 0.3];
+let cR = [.2, .3];
+// indicator for arrays
+let i;
 
 //state machine
-const states = {
+let states = {
     OFF: "off",
-    PLANE_1: {
-        TOL: "1. Ebene, to the left",
-        TOR: "1. Ebene, to the right"
-    },
+    PLANE_1: "1. Ebene",
     SLOPE_1: "1. schiefe Ebene",
     THROW: "schräger Wurf"
 
@@ -108,89 +110,110 @@ function draw() {							/* here is the dynamic part to put */
 
     // headline
     textAlign(CENTER, CENTER);
-    textSize(ratio*M);
+    textSize(ratio * M);
     fill(grassColor);
     text("The ultimate Golf-Game", x(9.75), y(8));
 
     // buttons
     rectMode(CORNER)
     fill(green);
-    rect(x(.5), y(-2), 3*ratio*M, ratio*M);
+    rect(x(.5), y(-2), 3 * ratio * M, ratio * M);
     textAlign(CENTER);
 
     fill(red);
-    rect(x(22), y(-2), 3*ratio*M, ratio*M);
+    rect(x(22), y(-2), 3 * ratio * M, ratio * M);
     textAlign(CENTER);
 
     fill(255);
     strokeWeight(0);
-    textSize(0.5*ratio*M);
+    textSize(0.5 * ratio * M);
     text("NEW", x(-1), y(-2.5));
     text("RESET", x(20.5), y(-2.5));
     if (mouseIsPressed) {
-        if (mouseX>=x(22) && mouseX<=x(19) &&
-            mouseY>=y(-2) && mouseY<=y(-3)){
+        if (mouseX >= x(22) && mouseX <= x(19) &&
+            mouseY >= y(-2) && mouseY <= y(-3)) {
             resetB();
         }
-        if (mouseX>=x(.5) && mouseX<=x(-3.5) &&
-            mouseY>=y(-2) && mouseY<=y(-3)){
+        if (mouseX >= x(.5) && mouseX <= x(-3.5) &&
+            mouseY >= y(-2) && mouseY <= y(-3)) {
             newB();
         }
     }
 
     /* calculations */
 
-    if (state===states.PLANE_1.TOR && ballPos[0]<=P[0][0]) {
-        state = states.OFF;
+    // if (state === states.PLANE_1.TOR && ballPos[0] <= P[0][0]) {
+    //     state = states.OFF;
+    // }
+    // if (state === states.SLOPE_1 && ballPos[0] <= P[1][0]) {
+    //     state = states.PLANE_1.TOR;
+    // }
+    // if (state === states.PLANE_1.TOL && ballPos[0] >= P[1][0]) {
+    //     ballPos = P[1].slice();
+    //     g1 = g * (Math.sin(beta[0] - cR[0] * Math.cos(beta[0])))
+    //     console.log(g1);
+    //     v = v0;
+    //     s = Math.sqrt(Math.pow(ballPos[0], 2) + Math.pow(ballPos[0], 2));
+    //     state = states.SLOPE_1;
+    // }
+    // if (state === states.SLOPE_1 && ballPos[0] >= P[2][0]) {
+    //     ballPos = P[2].slice();
+    //     v0X = v0 * Math.cos(beta[0]);
+    //     v0Y = v0 * Math.sin(beta[0]);
+    //     vY = v0Y - g * dt;
+    //     state = states.THROW;
+    // }
+    //
+    //
+    // switch (state) {
+    //     case states.OFF: {
+    //         console.log(state);
+    //         break;
+    //     }
+    //     case states.PLANE_1.TOL:
+    //     case states.PLANE_1.TOR:{
+    //         v = v + g1*dt;
+    //         s = s + v*dt;
+    //         console.log(s);
+    //         ballPos[0] = s*Math.cos(beta[0]);
+    //         ballPos[1] = s*Math.sin(beta[0]);
+    //         // let d;
+    //         // if (state===states.PLANE_1.TOL) d=1;
+    //         // else d=-1;
+    //         // ballPos[0] = ballPos[0] +d*(v0 * dt);
+    //         break;
+    //     }
+    //     case states.SLOPE_1: {
+    //         console.log(state);
+    //         v = v + g1*dt;
+    //         s = s + v*dt;
+    //         ballPos[0] = s*Math.cos(beta[0]);
+    //         ballPos[1] = s*Math.sin(beta[0]);
+    //         break;
+    //     }
+    //     case states.THROW: {
+    //         ballPos[0] = ballPos[0] + v0X * dt;
+    //         vY = vY -g*dt;
+    //         ballPos[1] = ballPos[1] + vY * dt;
+    //         break;
+    //     }
+    // }
+
+    if (state === states.PLANE_1 && ballPos[0] >= P[1][0]) {
+        ballPos[0] = P[1][0];
+        stateChance(states.SLOPE_1);
     }
-    if (state===states.SLOPE_1 && ballPos[0]<=P[1][0]) {
-        state = states.PLANE_1.TOR;
+
+
+
+    if (i != null) {
+        v = v + g1*dt;
+        if (v <= 0) v=0;
+        console.log(v);
+        s = s + v*dt;
+        ballPos[0] = s*Math.cos(beta[i]);
+        ballPos[1] = s*Math.sin(beta[i]);
     }
-    if (state===states.PLANE_1.TOL && ballPos[0]>=P[1][0]) {
-        ballPos=P[1].slice();
-        state = states.SLOPE_1;
-    }
-    if (state===states.SLOPE_1 && ballPos[0]>=P[2][0]) {
-        ballPos=P[2].slice();
-        v0X= v0 * Math.cos(beta[0]);
-        v0Y = v0 * Math.sin(beta[0]);
-        vY = v0Y -g * dt;
-        state = states.THROW;
-    }
-
-
-
-
-
-    switch (state) {
-        case states.OFF: {
-            console.log(state);
-            break;
-        }
-        case states.PLANE_1.TOL:
-        case states.PLANE_1.TOR:{
-            console.log(state);
-            let d;
-            if (state===states.PLANE_1.TOL) d=1;
-            else d=-1;
-            ballPos[0] = ballPos[0] +d*(v0 * dt);
-            break;
-        }
-        case states.SLOPE_1: {
-            console.log(state);
-            ballPos[0] = ballPos[0] + v0*Math.cos(beta[0]) * dt;
-            ballPos[1] = ballPos[1] + g*Math.sin(beta[0]) *  dt;
-            break;
-        }
-        case states.THROW: {
-            ballPos[0] = ballPos[0] + v0X * dt;
-            vY = vY -g*dt;
-            ballPos[1] = ballPos[1] + vY * dt;
-            break;
-        }
-    }
-
-
 
     /* display */
     drawBG();
@@ -227,15 +250,48 @@ function y(coord){
 }
 
 function resetB(){
-    state=states.OFF;
+    stateChance(states.OFF);
     ballPos = [0, 0];
 }
 
 function newB(){
     // wtf JS???? lemme just compare a goddamn array
     if (JSON.stringify(ballPos) === "[0,0]") {
-        state = states.PLANE_1.TOL;
+        stateChance(states.PLANE_1);
     }
+}
+
+function stateChance(st) {
+    let sign;
+    switch (st) {
+        case states.OFF: {
+            state = states.OFF;
+            console.log(state);
+            i = null;
+            v = 0;
+            break;
+        }
+        case states.PLANE_1: {
+            state = states.PLANE_1;
+            console.log(state);
+            i = 2;
+            v = v0;
+            s = 0;
+            sign = 1;
+            break;
+        }
+        case states.SLOPE_1: {
+            state = states.SLOPE_1;
+            console.log(state);
+            i = 2;
+            sign = 1;
+            //s = Math.sqrt(Math.pow(ballPos[0], 2) + Math.pow(ballPos[0], 2));
+            break;
+        }
+    }
+
+    if (i != null)
+        g1 = sign*g * (Math.sin(beta[i] - cR[1] * Math.cos(beta[i])));
 }
 
 function drawBG(){
