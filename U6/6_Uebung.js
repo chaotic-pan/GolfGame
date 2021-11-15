@@ -13,7 +13,7 @@ let M= (16.7/25.5)*canvasWidth/5;
 let ratio = 5/16.7;
 // Coordinates transformation cartesian<->internal
 let iO=[22.5*ratio, 9*ratio];
-// Coordinates collection of Ground
+// Coordinates collection of Playground
 let G = [
     // Start point
     [-2.5, -1.4],   // 0
@@ -53,32 +53,42 @@ let P = [
     G[14],          // 9
 ];
 
-let ballPos = [0, 0];
-let fRate = 50;
-let timescale = 1;
-let dt = timescale/fRate;
+let ballDiameter = .16;
+let ballPos = [0,0];
+// frameRate (cannot be called "frameRate" cause apparently the internal function is already called that)
+let frRate = 50;
+let timeScale = 1;
+// delta time
+let dt = timeScale/frRate;
+// starting velocity
 let v0= 2/ratio;
-let v; let s;
+// current velocity
+let v;
 let v0X; let v0Y; let vY;
-// angle of slopes [Grass, Sand]
-let beta = [Math.atan(P[2][1]-P[1][1])/(P[2][0]-P[1][0]),
-            Math.atan(P[2][1]-P[1][1])/(P[2][0]-P[1][0]),
-            Math.atan(P[1][1]-P[0][1])/(P[1][0]-P[0][0])];
+// angles of the playground
+let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),   // 0 Plane
+            Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0])),   // 1 Grass Slope
+            Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];  // 2 Sand Slope
+// indicator for beta array
+let i;
+// gravitational constant on earth
 let g = 9.81;
+// g'
 let g1;
+let sign = 1;
 // Coefficient of rolling friction [Grass, Sand]
 let cR = [.2, .3];
-// indicator for arrays
-let i;
+
 
 //state machine
 let states = {
     OFF: "off",
-    PLANE_1: "1. Ebene",
-    SLOPE_1: "1. schiefe Ebene",
+    PLANE: "grade Ebene",
+    SLOPE: "schiefe Ebene",
     THROW: "schräger Wurf"
 
 };
+// current state
 let state = states.OFF;
 
 let skyColor = '#dcebff';
@@ -89,15 +99,20 @@ let waterColor = '#9696ff';
 let red = '#e34132';
 let green = '#35e332';
 
-function setup() {	/* here are program-essentials to put */
+/* here are program-essentials to put */
+function setup() {
+
     createCanvas(windowWidth, windowHeight);
-    frameRate(fRate);
+    frameRate(frRate);
 }
 
-function draw() {							/* here is the dynamic part to put */
+/* here is the dynamic part to put */
+function draw() {
+
     /* administrative work */
     clear();
-    //game canvas
+
+    //game canvas / sky
     stroke(0);
     strokeWeight(1);
     fill(skyColor);
@@ -142,77 +157,59 @@ function draw() {							/* here is the dynamic part to put */
 
     /* calculations */
 
-    // if (state === states.PLANE_1.TOR && ballPos[0] <= P[0][0]) {
-    //     state = states.OFF;
-    // }
-    // if (state === states.SLOPE_1 && ballPos[0] <= P[1][0]) {
-    //     state = states.PLANE_1.TOR;
-    // }
-    // if (state === states.PLANE_1.TOL && ballPos[0] >= P[1][0]) {
-    //     ballPos = P[1].slice();
-    //     g1 = g * (Math.sin(beta[0] - cR[0] * Math.cos(beta[0])))
-    //     console.log(g1);
-    //     v = v0;
-    //     s = Math.sqrt(Math.pow(ballPos[0], 2) + Math.pow(ballPos[0], 2));
-    //     state = states.SLOPE_1;
-    // }
-    // if (state === states.SLOPE_1 && ballPos[0] >= P[2][0]) {
-    //     ballPos = P[2].slice();
-    //     v0X = v0 * Math.cos(beta[0]);
-    //     v0Y = v0 * Math.sin(beta[0]);
-    //     vY = v0Y - g * dt;
-    //     state = states.THROW;
-    // }
-    //
-    //
-    // switch (state) {
-    //     case states.OFF: {
-    //         console.log(state);
-    //         break;
-    //     }
-    //     case states.PLANE_1.TOL:
-    //     case states.PLANE_1.TOR:{
-    //         v = v + g1*dt;
-    //         s = s + v*dt;
-    //         console.log(s);
-    //         ballPos[0] = s*Math.cos(beta[0]);
-    //         ballPos[1] = s*Math.sin(beta[0]);
-    //         // let d;
-    //         // if (state===states.PLANE_1.TOL) d=1;
-    //         // else d=-1;
-    //         // ballPos[0] = ballPos[0] +d*(v0 * dt);
-    //         break;
-    //     }
-    //     case states.SLOPE_1: {
-    //         console.log(state);
-    //         v = v + g1*dt;
-    //         s = s + v*dt;
-    //         ballPos[0] = s*Math.cos(beta[0]);
-    //         ballPos[1] = s*Math.sin(beta[0]);
-    //         break;
-    //     }
-    //     case states.THROW: {
-    //         ballPos[0] = ballPos[0] + v0X * dt;
-    //         vY = vY -g*dt;
-    //         ballPos[1] = ballPos[1] + vY * dt;
-    //         break;
-    //     }
-    // }
-
-    if (state === states.PLANE_1 && ballPos[0] >= P[1][0]) {
+    // throw after first Slope
+    if (state===states.SLOPE && ballPos[0]>=P[2][0]) {
+        //ballPos=P[2].slice();
+        stateChance(states.THROW);
+    }
+    // up first Slope
+    if (state === states.PLANE && ballPos[0] > P[1][0]) {
         ballPos[0] = P[1][0];
-        stateChance(states.SLOPE_1);
+        stateChance(states.SLOPE);
+    }
+    // start
+    if (state !== states.OFF && state !== states.PLANE &&
+        ballPos[0] < P[1][0] && ballPos[0] > P[0][0]) {
+        stateChance(states.PLANE);
+    }
+    // end after ball rolled back to starting point
+    if (ballPos[0] < P[0][0]) {
+        ballPos =  [P[0][0]+ballDiameter/ratio, P[0][1]];
+        stateChance(states.OFF);
     }
 
-
-
-    if (i != null) {
-        v = v + g1*dt;
-        if (v <= 0) v=0;
-        console.log(v);
-        s = s + v*dt;
-        ballPos[0] = s*Math.cos(beta[i]);
-        ballPos[1] = s*Math.sin(beta[i]);
+    running: if (i != null) {
+        // temporary implementation of the throw (w/o resistance)
+        if (state===states.THROW) {
+            ballPos[0] = ballPos[0] + v0X * dt;
+            vY = vY -g*dt;
+            ballPos[1] = ballPos[1] + vY * dt;
+        }
+        // actual running w/ resistance
+        else {
+            v = v + g1*dt;
+            if (v <= 0 && sign===1) {
+                // not yet on slope
+                if (state === states.SLOPE) {
+                    // rolling downhill
+                    sign = -1;
+                } else {
+                    // stopping
+                    v=0;
+                    stateChance(states.OFF);
+                    break running;
+                }
+            }
+            if (v >= 0 && sign===-1) {
+                // stopping after rolling slope back down
+                v=0;
+                stateChance(states.OFF);
+                break running;
+            }
+            console.log(v);
+            ballPos[0] = ballPos[0] + v*dt;
+            ballPos[1] = ballPos[1] + v*Math.sin(beta[i]) * dt;
+        }
     }
 
     /* display */
@@ -223,7 +220,7 @@ function draw() {							/* here is the dynamic part to put */
     strokeWeight(1);
     fill(0);
     rectMode(CORNER);
-    rect(x((-.08/ratio)), y(4), .03*M, 4*ratio*M);
+    rect(x((-ballDiameter/ratio)), y(4), .03*M, 4*ratio*M);
 
     // Golf ball
     stroke(0);
@@ -232,7 +229,7 @@ function draw() {							/* here is the dynamic part to put */
     rectMode(CENTER);
     //ball coordinates are set at the bottom of the ball
     //to display the ball properly the y coordinate need to be moved up by half the diameter
-    circle(x(ballPos[0]), y(ballPos[1]+(.08/ratio)), .16*M);
+    circle(x(ballPos[0]-((ballDiameter/2)/ratio)), y(ballPos[1]+((ballDiameter/2)/ratio)), ballDiameter*M);
 
     // coordinate system origin
     stroke(255,0,0);
@@ -251,47 +248,52 @@ function y(coord){
 
 function resetB(){
     stateChance(states.OFF);
-    ballPos = [0, 0];
+    ballPos = [0,0];
 }
 
 function newB(){
     // wtf JS???? lemme just compare a goddamn array
     if (JSON.stringify(ballPos) === "[0,0]") {
-        stateChance(states.PLANE_1);
+        sign = 1;
+        v = v0;
+        stateChance(states.PLANE);
     }
 }
 
 function stateChance(st) {
-    let sign;
     switch (st) {
         case states.OFF: {
             state = states.OFF;
             console.log(state);
             i = null;
-            v = 0;
             break;
         }
-        case states.PLANE_1: {
-            state = states.PLANE_1;
+        case states.PLANE: {
+            state = states.PLANE;
             console.log(state);
-            i = 2;
-            v = v0;
-            s = 0;
-            sign = 1;
+            i = 0;
             break;
         }
-        case states.SLOPE_1: {
-            state = states.SLOPE_1;
+        case states.SLOPE: {
+            state = states.SLOPE;
             console.log(state);
-            i = 2;
-            sign = 1;
-            //s = Math.sqrt(Math.pow(ballPos[0], 2) + Math.pow(ballPos[0], 2));
+            i = 1;
+            break;
+        }
+        case states.THROW: {
+            state = states.THROW;
+            console.log(state);
+            i = 1;
+            v0X= v0 * Math.cos(beta[i]);
+            v0Y = v0 * Math.sin(beta[i]);
+            vY = v0Y -g * dt;
             break;
         }
     }
 
     if (i != null)
-        g1 = sign*g * (Math.sin(beta[i] - cR[1] * Math.cos(beta[i])));
+        g1 = sign*g * (Math.sin(-beta[i]) - cR[1] * Math.cos(-beta[i]));
+
 }
 
 function drawBG(){
