@@ -53,7 +53,11 @@ let P = [
     G[14],          // 9
 ];
 
+let tries=0;
+let hits=0;
+
 let ballDiameter = .16;
+let ballCenter = (ballDiameter/2)/ratio;
 let ballPos = [0,0];
 // frameRate (cannot be called "frameRate" cause apparently the internal function is already called that)
 let frRate = 50;
@@ -160,14 +164,30 @@ function draw() {
     vertex(x(22), y(-1.4));
     endShape(CLOSE);
 
+    drawBG();
+
     // headline
+    stroke(0);
+    strokeWeight(1);
     textAlign(CENTER, CENTER);
     textSize(ratio * M);
     fill(grassColor);
     text("The ultimate Golf-Game", x(9.75), y(8));
 
+    // headline
+    textAlign(LEFT, BOTTOM);
+    strokeWeight(0);
+    textSize(0.4 * ratio * M);
+    fill(50);
+    text("Tries: "+tries, x(22), y(7.1));
+    textAlign(RIGHT, BOTTOM);
+    text("Hits: "+hits, x(-2.5), y(7.1));
+
     // buttons
-    rectMode(CORNER)
+    stroke(0);
+    strokeWeight(1);
+    rectMode(CORNER);
+    textAlign(CENTER, CENTER);
     fill(green);
     rect(x(.5), y(-2), 3 * ratio * M, ratio * M);
     textAlign(CENTER);
@@ -204,12 +224,13 @@ function draw() {
         // ball rolled back down slope --> PLANE
         if (state !== states.OFF && state !== states.PLANE &&
             ballPos[0] < P[1][0] && ballPos[0] > P[0][0]) {
+            ballPos[1] = P[1][1];
             stateChance(states.PLANE);
             break stateChanging;
         }
         // reached end of game canvas --> OFF
-        if (ballPos[0] < P[0][0]+ballDiameter/ratio) {
-            ballPos =  [P[0][0]+ballDiameter/ratio, P[0][1]];
+        if (ballPos[0] < P[0][0]+2*ballCenter) {
+            ballPos =  [P[0][0]+2*ballCenter, P[0][1]];
             stateChance(states.OFF);
             break stateChanging;
         }
@@ -221,7 +242,32 @@ function draw() {
         }
     }
 
-    // throw after first Slope
+    if (ballPos[1] < 0) {
+        if (state !== states.OFF)
+            stateChance(states.OFF);
+        // hit Water
+        if (ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0] ) {
+            ballPos = [12.47,-0.8];
+            console.log(ballPos)
+        }
+        // hit goal
+        else if (ballPos[0]>=P[6][0] && ballPos[0]<=P[7][0] ) {
+            // so hits gets only increased once
+            if (JSON.stringify(ballPos) !== "[16.87,-0.8]")
+                hits++;
+            ballPos = [16.87,-0.8];
+
+
+        }
+        // there's a mistake somewhere
+        else {
+            fill(red);
+            stroke(255);
+            strokeWeight(1);
+            textSize(0.5 * ratio * M);
+            text("Oopsie!", x(ballPos[0]-ballCenter), y(ballPos[1]+3*ballCenter));
+        }
+    }
 
 
     running: if (i != null) {
@@ -252,7 +298,7 @@ function draw() {
                 stateChance(states.OFF);
                 break running;
             }
-            console.log(v);
+            //console.log(v);
             /*if (state===states.THROW) {
                 // vY = vY -(g-1/tau*vY)*dt;
                 // ballPos[1] = ballPos[1] - vY*dt;
@@ -268,14 +314,13 @@ function draw() {
     }
 
     /* display */
-    drawBG();
 
     // Golf club
     stroke(0);
     strokeWeight(1);
     fill(0);
     rectMode(CORNER);
-    rect(x((-ballDiameter/ratio)), y(4), .03*M, 4*ratio*M);
+    rect(x((-2*ballCenter)), y(4), .03*M, 4*ratio*M);
 
     // Golf ball
     stroke(0);
@@ -284,7 +329,7 @@ function draw() {
     rectMode(CENTER);
     //ball coordinates are set at the bottom of the ball
     //to display the ball properly the y coordinate need to be moved up by half the diameter
-    circle(x(ballPos[0]-((ballDiameter/2)/ratio)), y(ballPos[1]+((ballDiameter/2)/ratio)), ballDiameter*M);
+    circle(x(ballPos[0]-ballCenter), y(ballPos[1]+ballCenter), ballDiameter*M);
 
     // coordinate system origin
     stroke(255,0,0);
@@ -304,11 +349,14 @@ function y(coord){
 function resetB(){
     stateChance(states.OFF);
     ballPos = [0,0];
+    tries=0;
+    hits=0;
 }
 
 function newB(){
     // wtf JS???? lemme just compare a goddamn array
     if (JSON.stringify(ballPos) === "[0,0]") {
+        tries++;
         sign = 1;
         v = v0;
         stateChance(states.PLANE);
@@ -338,7 +386,7 @@ function goalB() {
 
 function sandB() {
     if (JSON.stringify(ballPos) === "[0,0]") {
-        v0 = 4 / ratio;
+        v0 = 4.5 / ratio;
         newB();
     }
 }
