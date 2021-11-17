@@ -1,7 +1,7 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
 Elisabeth Kintzel, s0574186
-Übung 6,  Dienstag, 16. November, 00:00
+Übung 7,  Dienstag, 23. November 2021, 00:00
  */
 
 let canvasWidth = window.innerWidth;
@@ -61,9 +61,9 @@ let timeScale = 1;
 // delta time
 let dt = timeScale/frRate;
 // starting velocity
-let v0= 3.85/ratio;
+let v0= 2.3/ratio;
     // <=2.4 rolls back
-    //<= 3.3 Water
+    // <= 3.3 Water
         // exact: 3.1-3.3
     // <= 3.85 Goal
         // exact: 3.85
@@ -86,7 +86,6 @@ let sign = 1;
 // Coefficient of rolling friction [Grass, Sand]
 let cR = [.2, .3];
 
-
 //state machine
 let states = {
     OFF: "off",
@@ -108,9 +107,40 @@ let green = '#35e332';
 
 /* here are program-essentials to put */
 function setup() {
-
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
+    let buttonBack;
+    buttonBack = createButton('Roll Back');
+    buttonBack.position(x(6.25), y(-2));
+    buttonBack.size(2*ratio*M, ratio*M);
+    buttonBack.style('font-size', '25px');
+    buttonBack.style('color', '#FFFFFF');
+    buttonBack.style('background-color', waterColor);
+    buttonBack.mousePressed(backB);
+    let buttonWater;
+    buttonWater = createButton('Hit Water');
+    buttonWater.position(x(9.25), y(-2));
+    buttonWater.size(2*ratio*M, ratio*M);
+    buttonWater.style('font-size', '25px');
+    buttonWater.style('color', '#FFFFFF');
+    buttonWater.style('background-color', waterColor);
+    buttonWater.mousePressed(waterB);
+    let buttonGoal;
+    buttonGoal = createButton('Hit Goal');
+    buttonGoal.position(x(12.25), y(-2));
+    buttonGoal.size(2*ratio*M, ratio*M);
+    buttonGoal.style('font-size', '25px');
+    buttonGoal.style('color', '#FFFFFF');
+    buttonGoal.style('background-color', waterColor);
+    buttonGoal.mousePressed(goalB);
+    let buttonSand;
+    buttonSand = createButton('Hit Sand');
+    buttonSand.position(x(15.25), y(-2));
+    buttonSand.size(2*ratio*M, ratio*M);
+    buttonSand.style('font-size', '25px');
+    buttonSand.style('color', '#FFFFFF');
+    buttonSand.style('background-color', waterColor);
+    buttonSand.mousePressed(sandB);
 }
 
 /* here is the dynamic part to put */
@@ -164,26 +194,35 @@ function draw() {
 
     /* calculations */
 
+    stateChanging: {
+        // reached foot of first slope --> SLOPE
+        if (state === states.PLANE && ballPos[0] > P[1][0]) {
+            ballPos[0] = P[1][0];
+            stateChance(states.SLOPE);
+            break stateChanging;
+        }
+        // ball rolled back down slope --> PLANE
+        if (state !== states.OFF && state !== states.PLANE &&
+            ballPos[0] < P[1][0] && ballPos[0] > P[0][0]) {
+            stateChance(states.PLANE);
+            break stateChanging;
+        }
+        // reached end of game canvas --> OFF
+        if (ballPos[0] < P[0][0]+ballDiameter/ratio) {
+            ballPos =  [P[0][0]+ballDiameter/ratio, P[0][1]];
+            stateChance(states.OFF);
+            break stateChanging;
+        }
+        // when up the first slope --> THROW
+        if (state===states.SLOPE && ballPos[0]>=P[2][0]) {
+            //ballPos=P[2].slice();
+            stateChance(states.THROW);
+            break stateChanging;
+        }
+    }
+
     // throw after first Slope
-    if (state===states.SLOPE && ballPos[0]>=P[2][0]) {
-        //ballPos=P[2].slice();
-        stateChance(states.THROW);
-    }
-    // up first Slope
-    if (state === states.PLANE && ballPos[0] > P[1][0]) {
-        ballPos[0] = P[1][0];
-        stateChance(states.SLOPE);
-    }
-    // start
-    if (state !== states.OFF && state !== states.PLANE &&
-        ballPos[0] < P[1][0] && ballPos[0] > P[0][0]) {
-        stateChance(states.PLANE);
-    }
-    // end after ball rolled back to starting point
-    if (ballPos[0] < P[0][0]) {
-        ballPos =  [P[0][0]+ballDiameter/ratio, P[0][1]];
-        stateChance(states.OFF);
-    }
+
 
     running: if (i != null) {
         // temporary implementation of the throw (w/o resistance)
@@ -273,6 +312,34 @@ function newB(){
         sign = 1;
         v = v0;
         stateChance(states.PLANE);
+    }
+}
+
+function backB() {
+    if (JSON.stringify(ballPos) === "[0,0]") {
+        v0 = 2 / ratio;
+        newB();
+    }
+}
+
+function waterB() {
+    if (JSON.stringify(ballPos) === "[0,0]") {
+        v0 = 3.2 / ratio;
+        newB();
+    }
+}
+
+function goalB() {
+    if (JSON.stringify(ballPos) === "[0,0]") {
+        v0 = 3.85 / ratio;
+        newB();
+    }
+}
+
+function sandB() {
+    if (JSON.stringify(ballPos) === "[0,0]") {
+        v0 = 4 / ratio;
+        newB();
     }
 }
 
