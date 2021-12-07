@@ -1,7 +1,7 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
 Elisabeth Kintzel, s0574186
-Übung 7,  Dienstag, 23. November 2021, 00:00
+Übung 8,  Dienstag, 7. Dezember, 00:00
  */
 
 let canvasWidth = window.innerWidth;
@@ -65,7 +65,7 @@ let timeScale = 1;
 // delta time
 let dt = timeScale/frRate;
 // starting velocity
-let v0= 2.3/ratio;
+let v0= 2.7/ratio;
     // <=2.4 rolls back
     // <= 3.3 Water
         // exact: 3.1-3.3
