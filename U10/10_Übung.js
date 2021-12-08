@@ -1,7 +1,7 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
 Elisabeth Kintzel, s0574186
-Übung 9,  Dienstag, 14. Dezember, 00:00
+Übung 10,  Dienstag, 21. Dezember, 00:00
  */
 
 let canvasWidth = window.innerWidth;

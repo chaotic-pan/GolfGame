@@ -9,33 +9,31 @@ let canvasHeight = window.innerHeight;
 
 // Scale "Maßstab"
 let M= (16.7/25.5)*canvasWidth/5;
-// ratio to convert the centimeter of the printed picture to the given Scale
-let ratio = 5/16.7;
 // Coordinates transformation cartesian<->internal
-let iO=[22.5*ratio, 9*ratio];
+let iO=[6.75, 2.7];
 // Coordinates collection of Playground
 let G = [
     // Start point
-    [-2.5, -1.4],   // 0
-    [-2.5, 0],      // 1
+    [-.75, -.42],   // 0
+    [-.75, 0],      // 1
     //Hill
-    [3.5, 0],       // 2
-    [6.5, 1.5],     // 3
-    [9.5, 0],       // 4
+    [1.05, 0],       // 2
+    [1.95, .45],     // 3
+    [2.85, 0],       // 4
     // Water Hole
-    [11.2, 0],      // 5
-    [11.4, -.8],    // 6
-    [13, -.8],      // 7
-    [13.2, 0],      // 8
+    [3.36, 0],      // 5
+    [3.42, -.24],    // 6
+    [3.9, -.24],      // 7
+    [3.96, 0],      // 8
     //Hole
-    [16.3, 0],      // 9
-    [16.3, -.8],    // 10
-    [16.9,-.8],     // 11
-    [16.9,0],       // 12
+    [4.89, 0],      // 9
+    [4.89, -.24],    // 10
+    [5.07,-.24],     // 11
+    [5.07,0],       // 12
     //Sand Hill
-    [19,0],         // 13
-    [22, 2.9],      // 14
-    [22,-1.4],      // 15
+    [5.7,0],         // 13
+    [6.6, .87],      // 14
+    [6.6,-.42],      // 15
 ];
 
 let P = [
@@ -56,8 +54,9 @@ let P = [
 let tries=0;
 let hits=0;
 
+// ballDiameter wird nur zum zeichnen genutzt, nicht für die Berechnung der Flugbahn
 let ballDiameter = .16;
-let ballCenter = (ballDiameter/2)/ratio;
+let ballCenter = (ballDiameter/2);
 let ballPos = [0,0];
 // frameRate (cannot be called "frameRate" cause apparently the internal function is already called that)
 let frRate = 50;
@@ -65,17 +64,20 @@ let timeScale = 1;
 // delta time
 let dt = timeScale/frRate;
 // starting velocity
-let v0= 2.7/ratio;
-    // <=2.4 rolls back
-    // <= 3.3 Water
-        // exact: 3.1-3.3
-    // <= 3.85 Goal
-        // exact: 3.85
-    // >= 3.9 Sand
+let v0= 3.1;
+    // <=4.4 rolls back
+    // <= 6 Water
+        // exact: 5.6-6
+            // Air Resistance:
+            // <= 6 Water
+            // exact: 5.6-6
+    // <= 7 Goal
+        // exact: 7
+    // >= 7 Sand
 // current velocity
 let v;
-//let tau = 0.5/(6 * Math.PI * 17.1*Math.pow(10,-6) * ballDiameter/2/ratio);
-let v0X; let v0Y; let vY;
+let v0X; let v0Y; let vY; let vX;
+let roh=1.3; let cW=0.45; let m=0.0025; let A=0.001;
 // angles of the playground
 let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),   // 0 Plane
             Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0])),   // 1 Grass Slope
@@ -109,47 +111,60 @@ let waterColor = '#9696ff';
 let red = '#e34132';
 let green = '#35e332';
 
+let resist=false;
+let buttonResist;
+let buttonBack; let buttonWater; let buttonGoal; let buttonSand;
+
 /* here are program-essentials to put */
 function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
-    let buttonBack;
-    buttonBack = createButton('Roll Back');
-    buttonBack.position(x(6.25), y(-2));
-    buttonBack.size(2*ratio*M, ratio*M);
-    buttonBack.style('font-size', '25px');
-    buttonBack.style('color', '#FFFFFF');
-    buttonBack.style('background-color', waterColor);
-    buttonBack.mousePressed(backB);
-    let buttonWater;
-    buttonWater = createButton('Hit Water');
-    buttonWater.position(x(9.25), y(-2));
-    buttonWater.size(2*ratio*M, ratio*M);
-    buttonWater.style('font-size', '25px');
-    buttonWater.style('color', '#FFFFFF');
-    buttonWater.style('background-color', waterColor);
-    buttonWater.mousePressed(waterB);
-    let buttonGoal;
-    buttonGoal = createButton('Hit Goal');
-    buttonGoal.position(x(12.25), y(-2));
-    buttonGoal.size(2*ratio*M, ratio*M);
-    buttonGoal.style('font-size', '25px');
-    buttonGoal.style('color', '#FFFFFF');
-    buttonGoal.style('background-color', waterColor);
-    buttonGoal.mousePressed(goalB);
-    let buttonSand;
-    buttonSand = createButton('Hit Sand');
-    buttonSand.position(x(15.25), y(-2));
-    buttonSand.size(2*ratio*M, ratio*M);
-    buttonSand.style('font-size', '25px');
-    buttonSand.style('color', '#FFFFFF');
-    buttonSand.style('background-color', waterColor);
-    buttonSand.mousePressed(sandB);
+    test_buttons: {
+
+        buttonBack = createButton('Roll Back');
+        buttonBack.position(x(.975), y(-.6));
+        buttonBack.size(.6 * M, .3 * M);
+        buttonBack.style('font-size', '25px');
+        buttonBack.style('color', '#FFFFFF');
+        buttonBack.style('background-color', waterColor);
+        buttonBack.mousePressed(backB);
+
+        buttonWater = createButton('Hit Water');
+        buttonWater.position(x(1.875), y(-.6));
+        buttonWater.size(.6 * M, .3 * M);
+        buttonWater.style('font-size', '25px');
+        buttonWater.style('color', '#FFFFFF');
+        buttonWater.style('background-color', waterColor);
+        buttonWater.mousePressed(waterB);
+
+        buttonGoal = createButton('Hit Goal');
+        buttonGoal.position(x(2.775), y(-.6));
+        buttonGoal.size(.6 * M, .3 * M);
+        buttonGoal.style('font-size', '25px');
+        buttonGoal.style('color', '#FFFFFF');
+        buttonGoal.style('background-color', waterColor);
+        buttonGoal.mousePressed(goalB);
+
+        buttonSand = createButton('Hit Sand');
+        buttonSand.position(x(3.675), y(-.6));
+        buttonSand.size(.6 * M, .3 * M);
+        buttonSand.style('font-size', '25px');
+        buttonSand.style('color', '#FFFFFF');
+        buttonSand.style('background-color', waterColor);
+        buttonSand.mousePressed(sandB);
+
+        buttonResist = createButton('add Air Resistance');
+        buttonResist.style('background-color', waterColor);
+        buttonResist.position(x(5.5), y(-.6));
+        buttonResist.size(1.5 * M, .15 * M);
+        buttonResist.style('font-size', '18px');
+        buttonResist.style('color', '#FFFFFF');
+        buttonResist.mousePressed(resistB);
+    }
 }
 
 /* here is the dynamic part to put */
 function draw() {
-
     /* administrative work */
     clear();
 
@@ -158,10 +173,10 @@ function draw() {
     strokeWeight(1);
     fill(skyColor);
     beginShape();
-    vertex(x(22), y(7));
-    vertex(x(-2.5), y(7));
-    vertex(x(-2.5), y(-1.4));
-    vertex(x(22), y(-1.4));
+    vertex(x(6.6), y(2.1));
+    vertex(x(-.75), y(2.1));
+    vertex(x(-.75), y(-.42));
+    vertex(x(6.6), y(-.42));
     endShape(CLOSE);
 
     drawBG();
@@ -170,18 +185,18 @@ function draw() {
     stroke(0);
     strokeWeight(1);
     textAlign(CENTER, CENTER);
-    textSize(ratio * M);
+    textSize(.3 * M);
     fill(grassColor);
-    text("The ultimate Golf-Game", x(9.75), y(8));
+    text("The ultimate Golf-Game", x(2.925), y(2.4));
 
     // headline
     textAlign(LEFT, BOTTOM);
     strokeWeight(0);
-    textSize(0.4 * ratio * M);
+    textSize(0.12 * M);
     fill(50);
-    text("Tries: "+tries, x(22), y(7.1));
+    text("Tries: "+tries, x(6.6), y(2.13));
     textAlign(RIGHT, BOTTOM);
-    text("Hits: "+hits, x(-2.5), y(7.1));
+    text("Hits: "+hits, x(-.75), y(2.13));
 
     // buttons
     stroke(0);
@@ -189,25 +204,25 @@ function draw() {
     rectMode(CORNER);
     textAlign(CENTER, CENTER);
     fill(green);
-    rect(x(.5), y(-2), 3 * ratio * M, ratio * M);
+    rect(x(.15), y(-.6), .9* M, .3* M);
     textAlign(CENTER);
 
     fill(red);
-    rect(x(22), y(-2), 3 * ratio * M, ratio * M);
+    rect(x(6.6), y(-.6), .9 * M, .3 * M);
     textAlign(CENTER);
 
     fill(255);
     strokeWeight(0);
-    textSize(0.5 * ratio * M);
-    text("NEW", x(-1), y(-2.5));
-    text("RESET", x(20.5), y(-2.5));
+    textSize(0.15 * M);
+    text("NEW", x(-.3), y(-.75));
+    text("RESET", x(6.15), y(-.75));
     if (mouseIsPressed) {
-        if (mouseX >= x(22) && mouseX <= x(19) &&
-            mouseY >= y(-2) && mouseY <= y(-3)) {
+        if (mouseX >= x(6.6) && mouseX <= x(5.7) &&
+            mouseY >= y(-.6) && mouseY <= y(-.9)) {
             resetB();
         }
-        if (mouseX >= x(.5) && mouseX <= x(-3.5) &&
-            mouseY >= y(-2) && mouseY <= y(-3)) {
+        if (mouseX >= x(.15) && mouseX <= x(-1.05) &&
+            mouseY >= y(-.6) && mouseY <= y(-.9)) {
             newB();
         }
     }
@@ -247,37 +262,37 @@ function draw() {
             stateChance(states.OFF);
         // hit Water
         if (ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0] ) {
-            ballPos = [12.47,-0.8];
+            ballPos = [3.74,-0.24];
             console.log(ballPos)
         }
         // hit goal
         else if (ballPos[0]>=P[6][0] && ballPos[0]<=P[7][0] ) {
             // so hits gets only increased once
-            if (JSON.stringify(ballPos) !== "[16.87,-0.8]")
+            if (JSON.stringify(ballPos) !== "[5.061,-0.24]")
                 hits++;
-            ballPos = [16.87,-0.8];
-
-
+            ballPos = [5.061,-0.24];
         }
         // there's a mistake somewhere
         else {
             fill(red);
             stroke(255);
             strokeWeight(1);
-            textSize(0.5 * ratio * M);
+            textSize(0.15 * M);
             text("Oopsie!", x(ballPos[0]-ballCenter), y(ballPos[1]+3*ballCenter));
         }
     }
 
-
     running: if (i != null) {
-        // temporary implementation of the throw (w/o resistance)
         if (state===states.THROW) {
-            ballPos[0] = ballPos[0] + v0X * dt;
-            vY = vY -g*dt;
+            if (!resist) {
+                vY = vY -g*dt;
+            } else {
+                vX= vX-((cW*roh*A)/(2*m) * Math.sqrt(vX*vX + vY*vY) * vX)*dt;
+                vY = vY -(g+(cW*roh*A)/(2*m) * Math.sqrt(vX*vX + vY*vY) * vX)*dt;
+            }
+            ballPos[0] = ballPos[0] + vX * dt;
             ballPos[1] = ballPos[1] + vY * dt;
         }
-        // actual running w/ resistance
         else {
             v = v + g1*dt;
             if (v <= 0 && sign===1) {
@@ -298,19 +313,10 @@ function draw() {
                 stateChance(states.OFF);
                 break running;
             }
-            //console.log(v);
-            /*if (state===states.THROW) {
-                // vY = vY -(g-1/tau*vY)*dt;
-                // ballPos[1] = ballPos[1] - vY*dt;
-                ballPos[0] = ballPos[0] + v0X * dt;
-                vY = vY -g*dt;
-                ballPos[1] = ballPos[1] + vY * dt;
-            } else {*/
-                ballPos[0] = ballPos[0] + v*dt;
-                ballPos[1] = ballPos[1] + v*Math.sin(beta[i]) * dt;
-           // }
-
+            ballPos[0] = ballPos[0] + v*dt;
+            ballPos[1] = ballPos[1] + v*Math.sin(beta[i]) * dt;
         }
+
     }
 
     /* display */
@@ -320,7 +326,7 @@ function draw() {
     strokeWeight(1);
     fill(0);
     rectMode(CORNER);
-    rect(x((-2*ballCenter)), y(4), .03*M, 4*ratio*M);
+    rect(x((-2*ballCenter)), y(4), .03*M, 1.2*M);
 
     // Golf ball
     stroke(0);
@@ -334,16 +340,16 @@ function draw() {
     // coordinate system origin
     stroke(255,0,0);
     strokeWeight(2);
-    line(x(-.25),y(0),x(.25),y(0));
-    line(x(0),y(-.25),x(0),y(.25));
+    line(x(-.075),y(0),x(.075),y(0));
+    line(x(0),y(-.075),x(0),y(.075));
 }
 
 function x(coord){
-    return (-coord*ratio+iO[0])*M;
+    return (-coord+iO[0])*M;
 }
 
 function y(coord){
-    return (-coord*ratio+iO[1])*M;
+    return (-coord+iO[1])*M;
 }
 
 function resetB(){
@@ -364,31 +370,173 @@ function newB(){
 }
 
 function backB() {
-    if (JSON.stringify(ballPos) === "[0,0]") {
-        v0 = 2 / ratio;
-        newB();
+    v0 = 3.1;
+
+    // color change
+    {
+        buttonBack = createButton('Roll Back');
+        buttonBack.position(x(.975), y(-.6));
+        buttonBack.size(.6 * M, .3 * M);
+        buttonBack.style('font-size', '25px');
+        buttonBack.style('color', '#FFFFFF');
+        buttonBack.style('background-color', '#6464ff' );
+        buttonBack.mousePressed(backB);
+
+        buttonWater = createButton('Hit Water');
+        buttonWater.position(x(1.875), y(-.6));
+        buttonWater.size(.6 * M, .3 * M);
+        buttonWater.style('font-size', '25px');
+        buttonWater.style('color', '#FFFFFF');
+        buttonWater.style('background-color', waterColor);
+        buttonWater.mousePressed(waterB);
+
+        buttonGoal = createButton('Hit Goal');
+        buttonGoal.position(x(2.775), y(-.6));
+        buttonGoal.size(.6 * M, .3 * M);
+        buttonGoal.style('font-size', '25px');
+        buttonGoal.style('color', '#FFFFFF');
+        buttonGoal.style('background-color', waterColor);
+        buttonGoal.mousePressed(goalB);
+
+        buttonSand = createButton('Hit Sand');
+        buttonSand.position(x(3.675), y(-.6));
+        buttonSand.size(.6 * M, .3 * M);
+        buttonSand.style('font-size', '25px');
+        buttonSand.style('color', '#FFFFFF');
+        buttonSand.style('background-color', waterColor);
+        buttonSand.mousePressed(sandB);
     }
 }
 
 function waterB() {
-    if (JSON.stringify(ballPos) === "[0,0]") {
-        v0 = 3.2 / ratio;
-        newB();
+    v0 = 5.8;
+
+    {
+        buttonBack = createButton('Roll Back');
+        buttonBack.position(x(.975), y(-.6));
+        buttonBack.size(.6 * M, .3 * M);
+        buttonBack.style('font-size', '25px');
+        buttonBack.style('color', '#FFFFFF');
+        buttonBack.style('background-color', waterColor);
+        buttonBack.mousePressed(backB);
+
+        buttonWater = createButton('Hit Water');
+        buttonWater.position(x(1.875), y(-.6));
+        buttonWater.size(.6 * M, .3 * M);
+        buttonWater.style('font-size', '25px');
+        buttonWater.style('color', '#FFFFFF');
+        buttonWater.style('background-color', '#6464ff');
+        buttonWater.mousePressed(waterB);
+
+        buttonGoal = createButton('Hit Goal');
+        buttonGoal.position(x(2.775), y(-.6));
+        buttonGoal.size(.6 * M, .3 * M);
+        buttonGoal.style('font-size', '25px');
+        buttonGoal.style('color', '#FFFFFF');
+        buttonGoal.style('background-color', waterColor);
+        buttonGoal.mousePressed(goalB);
+
+        buttonSand = createButton('Hit Sand');
+        buttonSand.position(x(3.675), y(-.6));
+        buttonSand.size(.6 * M, .3 * M);
+        buttonSand.style('font-size', '25px');
+        buttonSand.style('color', '#FFFFFF');
+        buttonSand.style('background-color', waterColor);
+        buttonSand.mousePressed(sandB);
     }
 }
 
 function goalB() {
-    if (JSON.stringify(ballPos) === "[0,0]") {
-        v0 = 3.85 / ratio;
-        newB();
+    v0 = 7;
+
+    {
+        buttonBack = createButton('Roll Back');
+        buttonBack.position(x(.975), y(-.6));
+        buttonBack.size(.6 * M, .3 * M);
+        buttonBack.style('font-size', '25px');
+        buttonBack.style('color', '#FFFFFF');
+        buttonBack.style('background-color', waterColor);
+        buttonBack.mousePressed(backB);
+
+        buttonWater = createButton('Hit Water');
+        buttonWater.position(x(1.875), y(-.6));
+        buttonWater.size(.6 * M, .3 * M);
+        buttonWater.style('font-size', '25px');
+        buttonWater.style('color', '#FFFFFF');
+        buttonWater.style('background-color', waterColor);
+        buttonWater.mousePressed(waterB);
+
+        buttonGoal = createButton('Hit Goal');
+        buttonGoal.position(x(2.775), y(-.6));
+        buttonGoal.size(.6 * M, .3 * M);
+        buttonGoal.style('font-size', '25px');
+        buttonGoal.style('color', '#FFFFFF');
+        buttonGoal.style('background-color', '#6464ff');
+        buttonGoal.mousePressed(goalB);
+
+        buttonSand = createButton('Hit Sand');
+        buttonSand.position(x(3.675), y(-.6));
+        buttonSand.size(.6 * M, .3 * M);
+        buttonSand.style('font-size', '25px');
+        buttonSand.style('color', '#FFFFFF');
+        buttonSand.style('background-color', waterColor);
+        buttonSand.mousePressed(sandB);
     }
 }
 
 function sandB() {
-    if (JSON.stringify(ballPos) === "[0,0]") {
-        v0 = 4.5 / ratio;
-        newB();
+    v0 = 8;
+
+    {
+        buttonBack = createButton('Roll Back');
+        buttonBack.position(x(.975), y(-.6));
+        buttonBack.size(.6 * M, .3 * M);
+        buttonBack.style('font-size', '25px');
+        buttonBack.style('color', '#FFFFFF');
+        buttonBack.style('background-color', waterColor);
+        buttonBack.mousePressed(backB);
+
+        buttonWater = createButton('Hit Water');
+        buttonWater.position(x(1.875), y(-.6));
+        buttonWater.size(.6 * M, .3 * M);
+        buttonWater.style('font-size', '25px');
+        buttonWater.style('color', '#FFFFFF');
+        buttonWater.style('background-color', waterColor);
+        buttonWater.mousePressed(waterB);
+
+        buttonGoal = createButton('Hit Goal');
+        buttonGoal.position(x(2.775), y(-.6));
+        buttonGoal.size(.6 * M, .3 * M);
+        buttonGoal.style('font-size', '25px');
+        buttonGoal.style('color', '#FFFFFF');
+        buttonGoal.style('background-color', waterColor);
+        buttonGoal.mousePressed(goalB);
+
+        buttonSand = createButton('Hit Sand');
+        buttonSand.position(x(3.675), y(-.6));
+        buttonSand.size(.6 * M, .3 * M);
+        buttonSand.style('font-size', '25px');
+        buttonSand.style('color', '#FFFFFF');
+        buttonSand.style('background-color', '#6464ff');
+        buttonSand.mousePressed(sandB);
     }
+}
+
+function resistB() {
+    resist = !resist;
+
+    if (!resist) {
+        buttonResist = createButton('add Air Resistance');
+        buttonResist.style('background-color', waterColor);
+    } else {
+        buttonResist = createButton('remove Air Resistance');
+        buttonResist.style('background-color', '#6464ff');
+    }
+    buttonResist.position(x(5.5), y(-.6));
+    buttonResist.size(1.5 * M, .15 * M);
+    buttonResist.style('font-size', '18px');
+    buttonResist.style('color', '#FFFFFF');
+    buttonResist.mousePressed(resistB);
 }
 
 function stateChance(st) {
@@ -418,7 +566,8 @@ function stateChance(st) {
             //vY = v;
             v0X= v * Math.cos(beta[i]);
             v0Y = v * Math.sin(beta[i]);
-            vY = v0Y -g * dt;
+            vY = v0Y;
+            vX = v0X;
             break;
         }
     }
@@ -440,10 +589,10 @@ function drawBG(){
     strokeWeight(3);
     fill(waterColor);
     beginShape(TESS);
-    vertex(x(13.15), y(-.2));
+    vertex(x(3.945), y(-.06));
     vertex(x(G[7][0]), y(G[7][1]));
     vertex(x(G[6][0]), y(G[6][1]));
-    vertex(x(11.25), y(-.2));
+    vertex(x(3.375), y(-.06));
     endShape(CLOSE);
 
     stroke(grassColor);
