@@ -1,4 +1,4 @@
-# GolfGame
+# The Ultimate Golf-Game
 
 ## Overview
 Golf Game is a physics-based game, written in JavaScript. 
