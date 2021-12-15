@@ -54,22 +54,30 @@ let P = [
 let tries=0;
 let hits=0;
 
-// ballDiameter wird nur zum zeichnen genutzt, nicht für die Berechnung der Flugbahn
-let ballDiameter = .16;
+
+// ballDiameter is only used to draw the ball, not for the Throw calculation
+let ballDiameter = .12;
 let ballCenter = (ballDiameter/2);
 let ballPos = [0,0];
+// radius of the golf club head
+let club = .08;
+// current club position
+let clubPos = [-ballCenter-club, club];
+// resting point of club
+let clubRest = [-ballCenter-club, club];
+
 // frameRate (cannot be called "frameRate" cause apparently the internal function is already called that)
 let frRate = 50;
 let timeScale = 1;
 // delta time
 let dt = timeScale/frRate;
 // starting velocity
-let v0= 3.1;
+let v0= 4.3;
     // <=4.4 rolls back
     // <= 6.8 Water
         // exact: 5.6-6.8
-    // <= 8.7 Goal
-        // exact: 8.6 - 8.7
+    // <= 8.2 Goal
+        // exact: 8.1 - 8.2
     // >= 8.7 Sand
 let wind = 0;
 let vWind = 0;
@@ -79,7 +87,7 @@ let v0X; let v0Y; let vY; let vX;
 let roh=1.3; let cW=0.45; let m=0.0025; let A=0.001;
 // angles of the playground
 let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),   // 0 Plane
-            Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0])),   // 1 Grass Slope
+            Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0]))+.04,   // 1 Grass Slope
             Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];  // 2 Sand Slope
 // indicator for beta array
 let i;
@@ -111,6 +119,7 @@ let red = '#e34132';
 let green = '#35e332';
 
 let buttonBack; let buttonWater; let buttonGoal; let buttonSand;
+let locked;
 
 /* here are program-essentials to put */
 function setup() {
@@ -154,87 +163,28 @@ function setup() {
 
 /* here is the dynamic part to put */
 function draw() {
+
     /* administrative work */
-    clear();
-
-    //game canvas / sky
-    stroke(0);
-    strokeWeight(1);
-    fill(skyColor);
-    beginShape();
-    vertex(x(6.6), y(2.1));
-    vertex(x(-.75), y(2.1));
-    vertex(x(-.75), y(-.42));
-    vertex(x(6.6), y(-.42));
-    endShape(CLOSE);
-
-    drawBG();
-
-    // headline
-    stroke(0);
-    strokeWeight(1);
-    textAlign(CENTER, CENTER);
-    textSize(.3 * M);
-    fill(grassColor);
-    text("The ultimate Golf-Game", x(2.925), y(2.4));
-
-    // headline
-    textAlign(LEFT, BOTTOM);
-    strokeWeight(0);
-    textSize(0.12 * M);
-    fill(50);
-    text("Tries: "+tries, x(6.6), y(2.13));
-    textAlign(RIGHT, BOTTOM);
-    text("Hits: "+hits, x(-.75), y(2.13));
-
-    // buttons
-    stroke(0);
-    strokeWeight(1);
-    rectMode(CORNER);
-    textAlign(CENTER, CENTER);
-    fill(green);
-    rect(x(.15), y(-.6), .9* M, .3* M);
-    textAlign(CENTER);
-
-    fill(red);
-    rect(x(6.6), y(-.6), .9 * M, .3 * M);
-    textAlign(CENTER);
-
-    fill(255);
-    strokeWeight(0);
-    textSize(0.15 * M);
-    text("NEW", x(-.3), y(-.75));
-    text("RESET", x(6.15), y(-.75));
-    if (mouseIsPressed) {
-        if (mouseX >= x(6.6) && mouseX <= x(5.7) &&
-            mouseY >= y(-.6) && mouseY <= y(-.9)) {
-            resetB();
-        }
-        if (mouseX >= x(.15) && mouseX <= x(-1.05) &&
-            mouseY >= y(-.6) && mouseY <= y(-.9)) {
-            newB();
-        }
-    }
+    drawUI();
 
     /* calculations */
-
     stateChanging: {
         // reached foot of first slope --> SLOPE
-        if (state === states.PLANE && ballPos[0] > P[1][0]) {
-            ballPos[0] = P[1][0];
+        if (state === states.PLANE && ballPos[0] > P[1][0]-ballCenter/2) {
+            ballPos[0] = P[1][0]-ballCenter/2;
             stateChance(states.SLOPE);
             break stateChanging;
         }
         // ball rolled back down slope --> PLANE
         if (state !== states.OFF && state !== states.PLANE &&
-            ballPos[0] < P[1][0] && ballPos[0] > P[0][0]) {
+            ballPos[0] < P[1][0]-ballCenter/2 && ballPos[0] > P[0][0]) {
             ballPos[1] = P[1][1];
             stateChance(states.PLANE);
             break stateChanging;
         }
         // reached end of game canvas --> OFF
-        if (ballPos[0] < P[0][0]+2*ballCenter) {
-            ballPos =  [P[0][0]+2*ballCenter, P[0][1]];
+        if (ballPos[0] < P[0][0]+ballCenter) {
+            ballPos =  [P[0][0]+ballCenter, P[0][1]];
             stateChance(states.OFF);
             break stateChanging;
         }
@@ -251,15 +201,18 @@ function draw() {
         if (state !== states.OFF)
             stateChance(states.OFF);
         // hit Water
-        if (ballPos[0]>=P[4][0]+ballCenter && ballPos[0]<=P[5][0]+ballCenter) {
-            ballPos = [3.74,-0.24];
+        if (ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
+            ballPos[1] = -0.24;
+            ballPos[0] = (P[4][0]+P[5][0])/2;
         }
         // hit goal
-        else if (ballPos[0]>=P[6][0]+ballCenter  && ballPos[0]<=P[7][0]+ballCenter) {
+        else if (ballPos[0]>=P[6][0]  && ballPos[0]<=P[7][0]) {
             // so hits gets only increased once
-            if (JSON.stringify(ballPos) !== "[5.061,-0.24]")
+            if (JSON.stringify(ballPos) !== "[4.98,-0.24]")
                 hits++;
-            ballPos = [5.061,-0.24];
+            ballPos[1] = -0.24;
+            ballPos[0] = (P[6][0]+P[7][0])/2;
+            console.log(ballPos);
         }
         // there's a mistake somewhere
         else {
@@ -305,7 +258,6 @@ function draw() {
     }
 
     /* display */
-
     //Flag
     stroke(0);
     strokeWeight(1);
@@ -324,12 +276,19 @@ function draw() {
     vertex(x(5.25), y(1.2));
     endShape();
 
+
     // Golf club
-    stroke(0);
-    strokeWeight(1);
-    fill(0);
-    rectMode(CORNER);
-    rect(x((-2*ballCenter)), y(4), .03*M, 1.2*M);
+    stroke(75);
+    beginShape(LINES);
+    vertex(x(clubPos[0]), y(clubPos[1]));
+    vertex(x(clubRest[0]), y(1.2));
+    endShape();
+
+    strokeWeight(0);
+    fill(150);
+    rectMode(CENTER);
+    circle(x(clubPos[0]), y(clubPos[1]), 2*club*M);
+
 
     // Golf ball
     stroke(0);
@@ -338,13 +297,7 @@ function draw() {
     rectMode(CENTER);
     //ball coordinates are set at the bottom of the ball
     //to display the ball properly the y coordinate need to be moved up by half the diameter
-    circle(x(ballPos[0]-ballCenter), y(ballPos[1]+ballCenter), ballDiameter*M);
-
-    // coordinate system origin
-    stroke(255,0,0);
-    strokeWeight(2);
-    line(x(-.075),y(0),x(.075),y(0));
-    line(x(0),y(-.075),x(0),y(.075));
+    circle(x(ballPos[0]), y(ballPos[1]+ballCenter), ballDiameter*M);
 }
 
 function x(coord){
@@ -353,6 +306,42 @@ function x(coord){
 
 function y(coord){
     return (-coord+iO[1])*M;
+}
+
+function mousePressed() {
+    if (mouseX >= x(-ballCenter) && mouseX <= x(-ballCenter-2*club) &&
+        mouseY >= y(2*club) && mouseY <= y(0)) {
+        locked = true;
+        return;
+    }
+
+    if (mouseX >= x(6.6) && mouseX <= x(5.7) &&
+        mouseY >= y(-.6) && mouseY <= y(-.9)) {
+        resetB();
+        return;
+    }
+    if (mouseX >= x(.15) && mouseX <= x(-1.05) &&
+        mouseY >= y(-.6) && mouseY <= y(-.9)) {
+        newB();
+    }
+
+}
+
+function mouseDragged() {
+    if (locked) {
+        clubPos[0] = -(mouseX/M -iO[0]);
+        if (clubPos[0] >= clubRest[0]) {
+            clubPos[0] = clubRest[0];
+        }
+        if (clubPos[0] <= P[0][0]+club) {
+            clubPos[0] = P[0][0]+club;
+        }
+
+    }
+}
+
+function mouseReleased() {
+    locked = false;
 }
 
 function resetB() {
@@ -456,7 +445,7 @@ function waterB() {
 }
 
 function goalB() {
-    v0 = 8.6;
+    v0 = 8.2;
 
     {
         buttonBack = createButton('Roll Back');
@@ -494,7 +483,7 @@ function goalB() {
 }
 
 function sandB() {
-    v0 = 12;
+    v0 = 10;
 
     {
         buttonBack = createButton('Roll Back');
@@ -567,6 +556,59 @@ function stateChance(st) {
     if (i != null)
         g1 = sign*g * (Math.sin(-beta[i]) - cR[1] * Math.cos(-beta[i]));
 
+}
+
+function drawUI() {
+    clear();
+
+    //game canvas / sky
+    stroke(0);
+    strokeWeight(1);
+    fill(skyColor);
+    beginShape();
+    vertex(x(6.6), y(2.1));
+    vertex(x(-.75), y(2.1));
+    vertex(x(-.75), y(-.42));
+    vertex(x(6.6), y(-.42));
+    endShape(CLOSE);
+
+    drawBG();
+
+    // headline
+    stroke(0);
+    strokeWeight(1);
+    textAlign(CENTER, CENTER);
+    textSize(.3 * M);
+    fill(grassColor);
+    text("The ultimate Golf-Game", x(2.925), y(2.4));
+
+    // headline
+    textAlign(LEFT, BOTTOM);
+    strokeWeight(0);
+    textSize(0.12 * M);
+    fill(50);
+    text("Tries: "+tries, x(6.6), y(2.13));
+    textAlign(RIGHT, BOTTOM);
+    text("Hits: "+hits, x(-.75), y(2.13));
+
+    // buttons
+    stroke(0);
+    strokeWeight(1);
+    rectMode(CORNER);
+    textAlign(CENTER, CENTER);
+    fill(green);
+    rect(x(.15), y(-.6), .9* M, .3* M);
+    textAlign(CENTER);
+
+    fill(red);
+    rect(x(6.6), y(-.6), .9 * M, .3 * M);
+    textAlign(CENTER);
+
+    fill(255);
+    strokeWeight(0);
+    textSize(0.15 * M);
+    text("NEW", x(-.3), y(-.75));
+    text("RESET", x(6.15), y(-.75));
 }
 
 function drawBG(){
