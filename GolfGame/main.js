@@ -51,7 +51,7 @@ let P = [
     G[14],          // 9
 ];
 
-let tries=0;
+let tries=1;
 let hits=0;
 
 
@@ -65,6 +65,8 @@ let club = .08;
 let clubPos = [-ballCenter-club, club];
 // resting point of club
 let clubRest = [-ballCenter-club, club];
+// attenuation "Dämpfung"
+let damp = false;
 
 // frameRate (cannot be called "frameRate" cause apparently the internal function is already called that)
 let frRate = 50;
@@ -83,6 +85,8 @@ let wind = 0;
 let vWind = 0;
 // current velocity
 let v;
+// velocity of Club
+let vC = 0;
 let v0X; let v0Y; let vY; let vX;
 let roh=1.3; let cW=0.45; let m=0.0025; let A=0.001;
 // angles of the playground
@@ -125,40 +129,6 @@ let locked;
 function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
-    test_buttons: {
-
-        buttonBack = createButton('Roll Back');
-        buttonBack.position(x(1.875), y(-.6));
-        buttonBack.size(.6 * M, .3 * M);
-        buttonBack.style('font-size', '25px');
-        buttonBack.style('color', '#FFFFFF');
-        buttonBack.style('background-color', waterColor);
-        buttonBack.mousePressed(backB);
-
-        buttonWater = createButton('Hit Water');
-        buttonWater.position(x(2.775), y(-.6));
-        buttonWater.size(.6 * M, .3 * M);
-        buttonWater.style('font-size', '25px');
-        buttonWater.style('color', '#FFFFFF');
-        buttonWater.style('background-color', waterColor);
-        buttonWater.mousePressed(waterB);
-
-        buttonGoal = createButton('Hit Goal');
-        buttonGoal.position(x(3.675), y(-.6));
-        buttonGoal.size(.6 * M, .3 * M);
-        buttonGoal.style('font-size', '25px');
-        buttonGoal.style('color', '#FFFFFF');
-        buttonGoal.style('background-color', waterColor);
-        buttonGoal.mousePressed(goalB);
-
-        buttonSand = createButton('Hit Sand');
-        buttonSand.position(x(4.575), y(-.6));
-        buttonSand.size(.6 * M, .3 * M);
-        buttonSand.style('font-size', '25px');
-        buttonSand.style('color', '#FFFFFF');
-        buttonSand.style('background-color', waterColor);
-        buttonSand.mousePressed(sandB);
-    }
 }
 
 /* here is the dynamic part to put */
@@ -221,6 +191,27 @@ function draw() {
             strokeWeight(1);
             textSize(0.15 * M);
             text("Oopsie!", x(ballPos[0]-ballCenter), y(ballPos[1]+3*ballCenter));
+        }
+    }
+
+    if (!locked && clubPos[0]!==clubRest[0]) {
+        if (!damp && clubPos[0]>=clubRest[0]) {
+            damp = true;
+        }if (!damp) {
+            vC = vC - (10 * (clubPos[0]-clubRest[0]))*dt;
+        } else {
+            vC = vC - (4*vC + 10 * (clubPos[0]-clubRest[0]))*dt;
+            // start moving ball
+            if (state===states.OFF && JSON.stringify(ballPos) === "[0,0]") {
+                sign = 1;
+                v = 2*vC;
+                stateChance(states.PLANE);
+            }
+        }
+        clubPos[0] = clubPos[0]+vC*dt;
+
+        if (damp && clubPos[0]<=clubRest[0]) {
+            clubPos[0]=clubRest[0];
         }
     }
 
@@ -312,6 +303,8 @@ function mousePressed() {
     if (mouseX >= x(-ballCenter) && mouseX <= x(-ballCenter-2*club) &&
         mouseY >= y(2*club) && mouseY <= y(0)) {
         locked = true;
+        vC = 0;
+        damp = false;
         return;
     }
 
@@ -333,10 +326,6 @@ function mouseDragged() {
         if (clubPos[0] >= clubRest[0]) {
             clubPos[0] = clubRest[0];
         }
-        if (clubPos[0] <= P[0][0]+club) {
-            clubPos[0] = P[0][0]+club;
-        }
-
     }
 }
 
@@ -345,27 +334,23 @@ function mouseReleased() {
 }
 
 function resetB() {
-    if (JSON.stringify(ballPos) === "[0,0]") return;
-
-    stateChance(states.OFF);
-    ballPos = [0, 0];
-    tries = 0;
+    newB();
+    tries = 1;
     hits = 0;
-
-    vWind = (floor(random() * (30))-15)/3.6;
-    wind = (vWind*3.6)/30;
-    console.log(vWind*3.6);
 }
 
 function newB(){
     // wtf JS???? lemme just compare a goddamn array
-    if (JSON.stringify(ballPos) === "[0,0]") {
+    if (JSON.stringify(ballPos) !== "[0,0]") {
         tries++;
-        sign = 1;
-        v = v0;
-        stateChance(states.PLANE);
+        stateChance(states.OFF);
+        ballPos = [0, 0];
+
+        vWind = (floor(random() * (30))-15)/3.6;
+        wind = (vWind*3.6)/30;
     }
 }
+
 
 function backB() {
     v0 = 3.1;
