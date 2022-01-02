@@ -90,9 +90,9 @@ let vC = 0;
 let v0X; let v0Y; let vY; let vX;
 let roh=1.3; let cW=0.45; let m=0.0025; let A=0.001;
 // angles of the playground
-let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),   // 0 Plane
+let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),       // 0 Plane
             Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0]))+.04,   // 1 Grass Slope
-            Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];  // 2 Sand Slope
+            Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];      // 2 Sand Slope
 // indicator for beta array
 let i;
 // gravitational constant on earth
@@ -122,7 +122,6 @@ let waterColor = '#9696ff';
 let red = '#e34132';
 let green = '#35e332';
 
-let buttonBack; let buttonWater; let buttonGoal; let buttonSand;
 let locked;
 
 /* here are program-essentials to put */
@@ -348,160 +347,6 @@ function newB(){
 
         vWind = (floor(random() * (30))-15)/3.6;
         wind = (vWind*3.6)/30;
-    }
-}
-
-
-function backB() {
-    v0 = 3.1;
-
-    // color change
-    {
-        buttonBack = createButton('Roll Back');
-        buttonBack.position(x(1.875), y(-.6));
-        buttonBack.size(.6 * M, .3 * M);
-        buttonBack.style('font-size', '25px');
-        buttonBack.style('color', '#FFFFFF');
-        buttonBack.style('background-color', '#6464ff' );
-        buttonBack.mousePressed(backB);
-
-        buttonWater = createButton('Hit Water');
-        buttonWater.position(x(2.775), y(-.6));
-        buttonWater.size(.6 * M, .3 * M);
-        buttonWater.style('font-size', '25px');
-        buttonWater.style('color', '#FFFFFF');
-        buttonWater.style('background-color', waterColor);
-        buttonWater.mousePressed(waterB);
-
-        buttonGoal = createButton('Hit Goal');
-        buttonGoal.position(x(3.675), y(-.6));
-        buttonGoal.size(.6 * M, .3 * M);
-        buttonGoal.style('font-size', '25px');
-        buttonGoal.style('color', '#FFFFFF');
-        buttonGoal.style('background-color', waterColor);
-        buttonGoal.mousePressed(goalB);
-
-        buttonSand = createButton('Hit Sand');
-        buttonSand.position(x(4.575), y(-.6));
-        buttonSand.size(.6 * M, .3 * M);
-        buttonSand.style('font-size', '25px');
-        buttonSand.style('color', '#FFFFFF');
-        buttonSand.style('background-color', waterColor);
-        buttonSand.mousePressed(sandB);
-    }
-}
-
-function waterB() {
-    v0 = 6.2;
-
-    {
-        buttonBack = createButton('Roll Back');
-        buttonBack.position(x(1.875), y(-.6));
-        buttonBack.size(.6 * M, .3 * M);
-        buttonBack.style('font-size', '25px');
-        buttonBack.style('color', '#FFFFFF');
-        buttonBack.style('background-color', waterColor);
-        buttonBack.mousePressed(backB);
-
-        buttonWater = createButton('Hit Water');
-        buttonWater.position(x(2.775), y(-.6));
-        buttonWater.size(.6 * M, .3 * M);
-        buttonWater.style('font-size', '25px');
-        buttonWater.style('color', '#FFFFFF');
-        buttonWater.style('background-color', '#6464ff');
-        buttonWater.mousePressed(waterB);
-
-        buttonGoal = createButton('Hit Goal');
-        buttonGoal.position(x(3.675), y(-.6));
-        buttonGoal.size(.6 * M, .3 * M);
-        buttonGoal.style('font-size', '25px');
-        buttonGoal.style('color', '#FFFFFF');
-        buttonGoal.style('background-color', waterColor);
-        buttonGoal.mousePressed(goalB);
-
-        buttonSand = createButton('Hit Sand');
-        buttonSand.position(x(4.575), y(-.6));
-        buttonSand.size(.6 * M, .3 * M);
-        buttonSand.style('font-size', '25px');
-        buttonSand.style('color', '#FFFFFF');
-        buttonSand.style('background-color', waterColor);
-        buttonSand.mousePressed(sandB);
-    }
-}
-
-function goalB() {
-    v0 = 8.2;
-
-    {
-        buttonBack = createButton('Roll Back');
-        buttonBack.position(x(1.875), y(-.6));
-        buttonBack.size(.6 * M, .3 * M);
-        buttonBack.style('font-size', '25px');
-        buttonBack.style('color', '#FFFFFF');
-        buttonBack.style('background-color', waterColor);
-        buttonBack.mousePressed(backB);
-
-        buttonWater = createButton('Hit Water');
-        buttonWater.position(x(2.775), y(-.6));
-        buttonWater.size(.6 * M, .3 * M);
-        buttonWater.style('font-size', '25px');
-        buttonWater.style('color', '#FFFFFF');
-        buttonWater.style('background-color', waterColor);
-        buttonWater.mousePressed(waterB);
-
-        buttonGoal = createButton('Hit Goal');
-        buttonGoal.position(x(3.675), y(-.6));
-        buttonGoal.size(.6 * M, .3 * M);
-        buttonGoal.style('font-size', '25px');
-        buttonGoal.style('color', '#FFFFFF');
-        buttonGoal.style('background-color', '#6464ff');
-        buttonGoal.mousePressed(goalB);
-
-        buttonSand = createButton('Hit Sand');
-        buttonSand.position(x(4.575), y(-.6));
-        buttonSand.size(.6 * M, .3 * M);
-        buttonSand.style('font-size', '25px');
-        buttonSand.style('color', '#FFFFFF');
-        buttonSand.style('background-color', waterColor);
-        buttonSand.mousePressed(sandB);
-    }
-}
-
-function sandB() {
-    v0 = 10;
-
-    {
-        buttonBack = createButton('Roll Back');
-        buttonBack.position(x(1.875), y(-.6));
-        buttonBack.size(.6 * M, .3 * M);
-        buttonBack.style('font-size', '25px');
-        buttonBack.style('color', '#FFFFFF');
-        buttonBack.style('background-color', waterColor);
-        buttonBack.mousePressed(backB);
-
-        buttonWater = createButton('Hit Water');
-        buttonWater.position(x(2.775), y(-.6));
-        buttonWater.size(.6 * M, .3 * M);
-        buttonWater.style('font-size', '25px');
-        buttonWater.style('color', '#FFFFFF');
-        buttonWater.style('background-color', waterColor);
-        buttonWater.mousePressed(waterB);
-
-        buttonGoal = createButton('Hit Goal');
-        buttonGoal.position(x(3.675), y(-.6));
-        buttonGoal.size(.6 * M, .3 * M);
-        buttonGoal.style('font-size', '25px');
-        buttonGoal.style('color', '#FFFFFF');
-        buttonGoal.style('background-color', waterColor);
-        buttonGoal.mousePressed(goalB);
-
-        buttonSand = createButton('Hit Sand');
-        buttonSand.position(x(4.575), y(-.6));
-        buttonSand.size(.6 * M, .3 * M);
-        buttonSand.style('font-size', '25px');
-        buttonSand.style('color', '#FFFFFF');
-        buttonSand.style('background-color', '#6464ff');
-        buttonSand.mousePressed(sandB);
     }
 }
 
