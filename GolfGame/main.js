@@ -1,7 +1,7 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
 Elisabeth Kintzel, s0574186
-Übung 10,  Dienstag, 21. Dezember, 00:00
+Übung 10,  Dienstag, 4. Januar 2022, 00:00
  */
 
 let canvasWidth = window.innerWidth;
@@ -11,6 +11,7 @@ let canvasHeight = window.innerHeight;
 let M= (16.7/25.5)*canvasWidth/5;
 // Coordinates transformation cartesian<->internal
 let iO=[6.75, 2.7];
+
 // Coordinates collection of Playground
 let G = [
     // Start point
@@ -50,57 +51,53 @@ let P = [
     G[13],          // 8
     G[14],          // 9
 ];
+// angles of the playground
+let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),         // 0 Plane
+            Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0]))+.04,     // 1 Grass Slope
+            Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];        // 2 Sand Slope
+// indicator for beta array
+let i;
 
-let tries=1;
-let hits=0;
-
-
-// ballDiameter is only used to draw the ball, not for the Throw calculation
-let ballDiameter = .12;
-let ballCenter = (ballDiameter/2);
+// ballRadius is only used to draw the ball, not for the Throw calculation
+let ballRadius = .06;
+// current ball position
 let ballPos = [0,0];
+
 // radius of the golf club head
-let club = .08;
+let clubRadius = .08;
 // current club position
-let clubPos = [-ballCenter-club, club];
+let clubPos = [-ballRadius-clubRadius, clubRadius];
 // resting point of club
-let clubRest = [-ballCenter-club, club];
-// attenuation "Dämpfung"
+let clubRest = [-ballRadius-clubRadius, clubRadius];
+// attenuation "Dämpfung" of club swing
 let damp = false;
 
-// frameRate (cannot be called "frameRate" cause apparently the internal function is already called that)
+// frameRate (cannot be called "frameRate" cause apparently a internal function is already called like that)
 let frRate = 50;
 let timeScale = 1;
 // delta time
 let dt = timeScale/frRate;
-// starting velocity
+
+// starting velocity for ball
 let v0= 4.3;
-    // <=4.4 rolls back
-    // <= 6.8 Water
-        // exact: 5.6-6.8
-    // <= 8.2 Goal
-        // exact: 8.1 - 8.2
-    // >= 8.7 Sand
-let wind = 0;
-let vWind = 0;
-// current velocity
+// current velocity of ball
 let v;
+// velocity of Wind
+let vWind = 0;
 // velocity of Club
-let vC = 0;
+let vClub = 0;
+
+// throw
 let v0X; let v0Y; let vY; let vX;
 let roh=1.3; let cW=0.45; let m=0.0025; let A=0.001;
-// angles of the playground
-let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),       // 0 Plane
-            Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0]))+.04,   // 1 Grass Slope
-            Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];      // 2 Sand Slope
-// indicator for beta array
-let i;
+
 // gravitational constant on earth
 let g = 9.81;
 // g'
 let g1;
+// + / -
 let sign = 1;
-// Coefficient of rolling friction [Grass, Sand]
+// coefficient of Rolling friction [Grass, Sand]
 let cR = [.2, .3];
 
 //state machine
@@ -109,10 +106,15 @@ let states = {
     PLANE: "grade Ebene",
     SLOPE: "schiefe Ebene",
     THROW: "schräger Wurf"
-
 };
 // current state
 let state = states.OFF;
+
+// locks Mouse down for club interaction
+let locked;
+
+let tries=1;
+let hits=0;
 
 let skyColor = '#dcebff';
 let grassColor = '#18c918';
@@ -121,8 +123,6 @@ let sandColor = '#fff61f';
 let waterColor = '#9696ff';
 let red = '#e34132';
 let green = '#35e332';
-
-let locked;
 
 /* here are program-essentials to put */
 function setup() {
@@ -139,21 +139,21 @@ function draw() {
     /* calculations */
     stateChanging: {
         // reached foot of first slope --> SLOPE
-        if (state === states.PLANE && ballPos[0] > P[1][0]-ballCenter/2) {
-            ballPos[0] = P[1][0]-ballCenter/2;
+        if (state === states.PLANE && ballPos[0] > P[1][0]-ballRadius/2) {
+            ballPos[0] = P[1][0]-ballRadius/2;
             stateChance(states.SLOPE);
             break stateChanging;
         }
         // ball rolled back down slope --> PLANE
         if (state !== states.OFF && state !== states.PLANE &&
-            ballPos[0] < P[1][0]-ballCenter/2 && ballPos[0] > P[0][0]) {
+            ballPos[0] < P[1][0]-ballRadius/2 && ballPos[0] > P[0][0]) {
             ballPos[1] = P[1][1];
             stateChance(states.PLANE);
             break stateChanging;
         }
         // reached end of game canvas --> OFF
-        if (ballPos[0] < P[0][0]+ballCenter) {
-            ballPos =  [P[0][0]+ballCenter, P[0][1]];
+        if (ballPos[0] < P[0][0]+ballRadius) {
+            ballPos =  [P[0][0]+ballRadius, P[0][1]];
             stateChance(states.OFF);
             break stateChanging;
         }
@@ -189,7 +189,7 @@ function draw() {
             stroke(255);
             strokeWeight(1);
             textSize(0.15 * M);
-            text("Oopsie!", x(ballPos[0]-ballCenter), y(ballPos[1]+3*ballCenter));
+            text("Oopsie!", x(ballPos[0]-ballRadius), y(ballPos[1]+3*ballRadius));
         }
     }
 
@@ -197,17 +197,17 @@ function draw() {
         if (!damp && clubPos[0]>=clubRest[0]) {
             damp = true;
         }if (!damp) {
-            vC = vC - (10 * (clubPos[0]-clubRest[0]))*dt;
+            vClub = vClub - (10 * (clubPos[0]-clubRest[0]))*dt;
         } else {
-            vC = vC - (4*vC + 10 * (clubPos[0]-clubRest[0]))*dt;
+            vClub = vClub - (4*vClub + 10 * (clubPos[0]-clubRest[0]))*dt;
             // start moving ball
             if (state===states.OFF && JSON.stringify(ballPos) === "[0,0]") {
                 sign = 1;
-                v = 2*vC;
+                v = 2*vClub;
                 stateChance(states.PLANE);
             }
         }
-        clubPos[0] = clubPos[0]+vC*dt;
+        clubPos[0] = clubPos[0]+vClub*dt;
 
         if (damp && clubPos[0]<=clubRest[0]) {
             clubPos[0]=clubRest[0];
@@ -255,7 +255,7 @@ function draw() {
     beginShape(TRIANGLES);
     vertex(x(5.25), y(1.2));
     vertex(x(5.25), y(1.02));
-    vertex(x(5.25+wind), y(1.11));
+    vertex(x(5.25+(vWind*3.6)/30), y(1.11));
     endShape();
 
     stroke(75);
@@ -277,7 +277,7 @@ function draw() {
     strokeWeight(0);
     fill(150);
     rectMode(CENTER);
-    circle(x(clubPos[0]), y(clubPos[1]), 2*club*M);
+    circle(x(clubPos[0]), y(clubPos[1]), 2*clubRadius*M);
 
 
     // Golf ball
@@ -287,7 +287,7 @@ function draw() {
     rectMode(CENTER);
     //ball coordinates are set at the bottom of the ball
     //to display the ball properly the y coordinate need to be moved up by half the diameter
-    circle(x(ballPos[0]), y(ballPos[1]+ballCenter), ballDiameter*M);
+    circle(x(ballPos[0]), y(ballPos[1]+ballRadius), 2*ballRadius*M);
 }
 
 function x(coord){
@@ -299,10 +299,10 @@ function y(coord){
 }
 
 function mousePressed() {
-    if (mouseX >= x(-ballCenter) && mouseX <= x(-ballCenter-2*club) &&
-        mouseY >= y(2*club) && mouseY <= y(0)) {
+    if (mouseX >= x(-ballRadius) && mouseX <= x(-ballRadius-2*clubRadius) &&
+        mouseY >= y(2*clubRadius) && mouseY <= y(0)) {
         locked = true;
-        vC = 0;
+        vClub = 0;
         damp = false;
         return;
     }
@@ -346,7 +346,6 @@ function newB(){
         ballPos = [0, 0];
 
         vWind = (floor(random() * (30))-15)/3.6;
-        wind = (vWind*3.6)/30;
     }
 }
 
