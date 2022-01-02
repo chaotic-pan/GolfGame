@@ -1,7 +1,7 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
 Elisabeth Kintzel, s0574186
-Übung 10,  Dienstag, 4. Januar 2022, 00:00
+Übung 11, 11. Januar 2022, 00:00
  */
 
 let canvasWidth = window.innerWidth;
@@ -51,12 +51,17 @@ let P = [
     G[13],          // 8
     G[14],          // 9
 ];
+// surface Segments vectors
+let S = Array(10).fill(0);
+// lenght of surface Segments vectors
+let Sl = Array(10).fill(0);
+
 // angles of the playground
 let beta = [Math.atan((P[1][1]-P[0][1])/(P[1][0]-P[0][0])),         // 0 Plane
             Math.atan((P[2][1]-P[1][1])/(P[2][0]-P[1][0]))+.04,     // 1 Grass Slope
             Math.atan((P[9][1]-P[8][1])/(P[9][0]-P[8][0]))];        // 2 Sand Slope
 // indicator for beta array
-let i;
+let b;
 
 // ballRadius is only used to draw the ball, not for the Throw calculation
 let ballRadius = .06;
@@ -65,10 +70,10 @@ let ballPos = [0,0];
 
 // radius of the golf club head
 let clubRadius = .08;
+// current club position
+let clubPos = [-ballRadius-clubRadius, clubRadius];
 // resting point of club
 let clubRest = [-ballRadius-clubRadius, clubRadius];
-// current club position
-let clubPos = clubRest;
 // attenuation "Dämpfung" of club swing
 let damp = false;
 
@@ -90,6 +95,9 @@ let vClub = 0;
 // throw
 let v0X; let v0Y; let vY; let vX;
 let roh=1.3; let cW=0.45; let m=0.0025; let A=0.001;
+
+// Collision
+let d; let lPart;
 
 // gravitational constant on earth
 let g = 9.81;
@@ -128,6 +136,14 @@ let green = '#35e332';
 function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
+
+    for (let i=0; i<P.length-1; i++) {
+        let x = P[i+1][0]-P[i][0];
+        let y = P[i+1][1]-P[i][1];
+        S[i]= [x,y];
+        
+        Sl[i] = Math.sqrt(Math.pow(S[i][0],2)+Math.pow(S[i][1],2));
+    }
 }
 
 /* here is the dynamic part to put */
@@ -164,42 +180,15 @@ function draw() {
             break stateChanging;
         }
     }
-
-    // end
-    if (ballPos[1] < 0) {
-        if (state !== states.OFF)
-            stateChange(states.OFF);
-        // hit Water
-        if (ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
-            ballPos[1] = -0.24;
-            ballPos[0] = (P[4][0]+P[5][0])/2;
-        }
-        // hit goal
-        else if (ballPos[0]>=P[6][0]  && ballPos[0]<=P[7][0]) {
-            // so hits gets only increased once
-            if (JSON.stringify(ballPos) !== "[4.98,-0.24]")
-                hits++;
-            ballPos[1] = -0.24;
-            ballPos[0] = (P[6][0]+P[7][0])/2;
-            console.log(ballPos);
-        }
-        // there's a mistake somewhere
-        else {
-            fill(red);
-            stroke(255);
-            strokeWeight(1);
-            textSize(0.15 * M);
-            text("Oopsie!", x(ballPos[0]-ballRadius), y(ballPos[1]+3*ballRadius));
-        }
-    }
-
+    
+    // start
     if (!locked && clubPos[0]!==clubRest[0]) {
         if (!damp && clubPos[0]>=clubRest[0]) {
             damp = true;
         }if (!damp) {
-            vClub = vClub - (10 * (clubPos[0]-clubRest[0]))*dt;
+            vClub = vClub - (75 * (clubPos[0]-clubRest[0]))*dt;
         } else {
-            vClub = vClub - (4*vClub + 10 * (clubPos[0]-clubRest[0]))*dt;
+            vClub = vClub - (4*vClub + 75 * (clubPos[0]-clubRest[0]))*dt;
             // start moving ball
             if (state===states.OFF && JSON.stringify(ballPos) === "[0,0]") {
                 sign = 1;
@@ -213,13 +202,72 @@ function draw() {
             clubPos[0]=clubRest[0];
         }
     }
+    
+    // end
+    // if (ballPos[1] < 0) {
+    //     // hit Water
+    //     if (ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
+    //         if (state !== states.OFF)
+    //             stateChange(states.OFF);
+    //         ballPos[1] = -0.24;
+    //         ballPos[0] = (P[4][0]+P[5][0])/2;
+    //     }
+    //     // hit goal
+    //     else if (ballPos[0]>=P[6][0]  && ballPos[0]<=P[7][0]) {
+    //         if (state !== states.OFF) {
+    //             stateChange(states.OFF);
+    //             hits++;
+    //         }    
+    //         ballPos[1] = -0.24;
+    //         ballPos[0] = (P[6][0]+P[7][0])/2;
+    //     }
+    //     // there's a mistake somewhere
+    //     else {
+    //         // fill(red);
+    //         // stroke(255);
+    //         // strokeWeight(1);
+    //         // textSize(0.15 * M);
+    //         // text("Oopsie!", x(ballPos[0]-ballRadius), y(ballPos[1]+3*ballRadius));
+    //     }
+    // }
+   
 
-    running: if (i != null) {
+    running: if (b != null) {
         if (state===states.THROW) {
             vX= vX-((cW*roh*A)/(2*m) * Math.sqrt(Math.pow(vX-vWind, 2) + vY*vY) * vX)*dt;
             vY = vY -(g+(cW*roh*A)/(2*m) * Math.sqrt(vX*vX + vY*vY) * vX)*dt;
             ballPos[0] = ballPos[0] + vX * dt;
             ballPos[1] = ballPos[1] + vY * dt;
+
+            // collision
+            let dMin = 1000;
+            for (let i=0; i<S.length-1; i++) {
+                // vector from Point i to Ball pos
+                let B = [ballPos[0]-P[i][0], ballPos[1]-P[i][1]]
+                d = (S[i][0]*B[1] - S[i][1]*B[0]) / Sl[i];
+                lPart = (S[i][0]*B[0] + S[i][1]*B[1]) / Sl[i];
+                
+                if (lPart > 0 && lPart < Sl[i]) {
+                    if (d < dMin) dMin=d;
+                }
+
+                if (dMin<0) {
+                    stateChange(states.OFF);
+                    console.log("Abstandes vom Segmentanfang: " + lPart);
+                    
+                    // hit Water
+                    if (i===4) {
+                        ballPos[1] = -0.24;
+                    }
+                    // hit Goal
+                    if (i===6) {
+                        hits++;
+                        ballPos[1] = -0.24;
+                    }
+                    break;
+                }
+            }
+            
         }
         else {
             v = v + g1*dt;
@@ -242,52 +290,13 @@ function draw() {
                 break running;
             }
             ballPos[0] = ballPos[0] + v*dt;
-            ballPos[1] = ballPos[1] + v*Math.sin(beta[i]) * dt;
+            ballPos[1] = ballPos[1] + v*Math.sin(beta[b]) * dt;
         }
 
     }
 
     /* display */
-    //Flag
-    stroke(0);
-    strokeWeight(1);
-    fill(255, 68, 31);
-    beginShape(TRIANGLES);
-    vertex(x(5.25), y(1.2));
-    vertex(x(5.25), y(1.02));
-    vertex(x(5.25+(vWind*3.6)/30), y(1.11));
-    endShape();
-
-    stroke(75);
-    strokeWeight(5);
-    noFill();
-    beginShape(LINES);
-    vertex(x(5.25), y(0));
-    vertex(x(5.25), y(1.2));
-    endShape();
-
-
-    // Golf club
-    stroke(75);
-    beginShape(LINES);
-    vertex(x(clubPos[0]), y(clubPos[1]));
-    vertex(x(clubRest[0]), y(1.2));
-    endShape();
-
-    strokeWeight(0);
-    fill(150);
-    rectMode(CENTER);
-    circle(x(clubPos[0]), y(clubPos[1]), 2*clubRadius*M);
-
-
-    // Golf ball
-    stroke(0);
-    strokeWeight(1);
-    fill(240);
-    rectMode(CENTER);
-    //ball coordinates are set at the bottom of the ball
-    //to display the ball properly the y coordinate need to be moved up by half the diameter
-    circle(x(ballPos[0]), y(ballPos[1]+ballRadius), 2*ballRadius*M);
+    drawFG();
 }
 
 function x(coord){
@@ -349,42 +358,83 @@ function newB(){
     }
 }
 
-function stateChange(state) {
-    switch (state) {
+function stateChange(st) {
+    switch (st) {
         case states.OFF: {
+            console.log(st);
             state = states.OFF;
-            console.log(state);
-            i = null;
+            b = null;
             break;
         }
         case states.PLANE: {
             state = states.PLANE;
-            console.log(state);
-            i = 0;
+            b = 0;
             break;
         }
         case states.SLOPE: {
             state = states.SLOPE;
-            console.log(state);
-            i = 1;
+            b = 1;
             break;
         }
         case states.THROW: {
             state = states.THROW;
-            console.log(state);
-            i = 1;
+            b = 1;
             //vY = v;
-            v0X= v * Math.cos(beta[i]);
-            v0Y = v * Math.sin(beta[i]);
+            v0X= v * Math.cos(beta[b]);
+            v0Y = v * Math.sin(beta[b]);
             vY = v0Y;
             vX = v0X;
             break;
         }
     }
 
-    if (i != null)
-        g1 = sign*g * (Math.sin(-beta[i]) - cR[1] * Math.cos(-beta[i]));
+    if (b != null)
+        g1 = sign*g * (Math.sin(-beta[b]) - cR[1] * Math.cos(-beta[b]));
 
+}
+
+// foreground
+function drawFG() {
+    //Flag
+    stroke(0);
+    strokeWeight(1);
+    fill(255, 68, 31);
+    beginShape(TRIANGLES);
+    vertex(x(5.25), y(1.2));
+    vertex(x(5.25), y(1.02));
+    vertex(x(5.25+(vWind*3.6)/30), y(1.11));
+    endShape();
+
+    stroke(75);
+    strokeWeight(5);
+    noFill();
+    beginShape(LINES);
+    vertex(x(5.25), y(0));
+    vertex(x(5.25), y(1.2));
+    endShape();
+
+
+    // Golf club
+    stroke(75);
+    beginShape(LINES);
+    vertex(x(clubPos[0]), y(clubPos[1]));
+    vertex(x(clubRest[0]), y(1.2));
+    endShape();
+
+    strokeWeight(0);
+    fill(150);
+    rectMode(CENTER);
+    circle(x(clubPos[0]), y(clubPos[1]), 2*clubRadius*M);
+
+
+    // Golf ball
+    stroke(0);
+    strokeWeight(1);
+    fill(240);
+    rectMode(CENTER);
+    //ball coordinates are set at the bottom of the ball
+    //to display the ball properly the y coordinate need to be moved up by half the diameter
+    circle(x(ballPos[0]), y(ballPos[1]+ballRadius), 2*ballRadius*M);
 }
 
 function drawUI() {
@@ -440,6 +490,7 @@ function drawUI() {
     text("RESET", x(6.15), y(-.75));
 }
 
+// background
 function drawBG(){
     fill(dirtColor);
     beginShape(TESS);
