@@ -65,10 +65,10 @@ let ballPos = [0,0];
 
 // radius of the golf club head
 let clubRadius = .08;
-// current club position
-let clubPos = [-ballRadius-clubRadius, clubRadius];
 // resting point of club
 let clubRest = [-ballRadius-clubRadius, clubRadius];
+// current club position
+let clubPos = clubRest;
 // attenuation "Dämpfung" of club swing
 let damp = false;
 
@@ -141,26 +141,26 @@ function draw() {
         // reached foot of first slope --> SLOPE
         if (state === states.PLANE && ballPos[0] > P[1][0]-ballRadius/2) {
             ballPos[0] = P[1][0]-ballRadius/2;
-            stateChance(states.SLOPE);
+            stateChange(states.SLOPE);
             break stateChanging;
         }
         // ball rolled back down slope --> PLANE
         if (state !== states.OFF && state !== states.PLANE &&
             ballPos[0] < P[1][0]-ballRadius/2 && ballPos[0] > P[0][0]) {
             ballPos[1] = P[1][1];
-            stateChance(states.PLANE);
+            stateChange(states.PLANE);
             break stateChanging;
         }
         // reached end of game canvas --> OFF
         if (ballPos[0] < P[0][0]+ballRadius) {
             ballPos =  [P[0][0]+ballRadius, P[0][1]];
-            stateChance(states.OFF);
+            stateChange(states.OFF);
             break stateChanging;
         }
         // when up the first slope --> THROW
         if (state===states.SLOPE && ballPos[0]>=P[2][0]) {
             //ballPos=P[2].slice();
-            stateChance(states.THROW);
+            stateChange(states.THROW);
             break stateChanging;
         }
     }
@@ -168,7 +168,7 @@ function draw() {
     // end
     if (ballPos[1] < 0) {
         if (state !== states.OFF)
-            stateChance(states.OFF);
+            stateChange(states.OFF);
         // hit Water
         if (ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
             ballPos[1] = -0.24;
@@ -204,7 +204,7 @@ function draw() {
             if (state===states.OFF && JSON.stringify(ballPos) === "[0,0]") {
                 sign = 1;
                 v = 2*vClub;
-                stateChance(states.PLANE);
+                stateChange(states.PLANE);
             }
         }
         clubPos[0] = clubPos[0]+vClub*dt;
@@ -231,14 +231,14 @@ function draw() {
                 } else {
                     // stopping
                     v=0;
-                    stateChance(states.OFF);
+                    stateChange(states.OFF);
                     break running;
                 }
             }
             if (v >= 0 && sign===-1) {
                 // stopping after rolling slope back down
                 v=0;
-                stateChance(states.OFF);
+                stateChange(states.OFF);
                 break running;
             }
             ballPos[0] = ballPos[0] + v*dt;
@@ -342,15 +342,15 @@ function newB(){
     // wtf JS???? lemme just compare a goddamn array
     if (JSON.stringify(ballPos) !== "[0,0]") {
         tries++;
-        stateChance(states.OFF);
+        stateChange(states.OFF);
         ballPos = [0, 0];
 
         vWind = (floor(random() * (30))-15)/3.6;
     }
 }
 
-function stateChance(st) {
-    switch (st) {
+function stateChange(state) {
+    switch (state) {
         case states.OFF: {
             state = states.OFF;
             console.log(state);
