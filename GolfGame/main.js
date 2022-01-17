@@ -184,11 +184,13 @@ function draw() {
             stateChange(states.THROW);
             break stateChanging;
         }
+        // when roll over water --> loose
         if ((state===states.PLANE|| state===states.PLANE_BACK) && 
             ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
             stateChange(states.OFF);
             ballPos[1] = -0.24;
         }
+        // when roll over hole --> win
         if ((state===states.PLANE || state===states.PLANE_BACK) && 
             (ballPos[0]>=P[6][0] && ballPos[0]<=P[7][0])) {
             stateChange(states.OFF);
