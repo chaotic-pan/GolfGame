@@ -52,13 +52,13 @@ let P = [
     G[14],          // 9
 ];
 // surface Segments vectors
-let S = Array(10).fill(0);
+let S = Array(9).fill(0);
 // lenght of surface Segments vectors
-let Sl = Array(10).fill(0);
+let Sl = Array(9).fill(0);
 let Si = 0;
 
 // angles of the playground
-let beta = Array(10).fill(0);
+let beta = Array(9).fill(0);
 
 // ballRadius is only used to draw the ball, not for the Throw calculation
 let ballRadius = .06;
@@ -76,7 +76,7 @@ let damp = false;
 
 // frameRate (cannot be called "frameRate" cause apparently a internal function is already called like that)
 let frRate = 50;
-let timeScale = .2;
+let timeScale = 1;
 // delta time
 let dt = timeScale/frRate;
 
@@ -90,7 +90,7 @@ let vWind = 0;
 let vClub = 0;
 
 // throw
-let v0X; let v0Y; let vY; let vX;
+let vY; let vX;
 let roh=1.3; let cW=0.45; let m=0.0459; let dBall=0.043; 
 let A= Math.PI * Math.pow((dBall/2),2);
 
@@ -114,6 +114,7 @@ let states = {
     PLANE: "grade Ebene",
     PLANE_BACK: "grade Ebene zurück",
     SLOPE: "schiefe Ebene",
+	SLOPE_L: "schiefe Ebene, landing",
     SLOPE_DOWN: "schiefe Ebene runter",
     THROW: "schräger Wurf"
 };
@@ -162,46 +163,59 @@ function draw() {
         if (state === states.PLANE && ballPos[0] > P[1][0]-ballRadius/2 && ballPos[0] < P[2][0]) {
             ballPos[0] = P[1][0]-ballRadius/2;
             Si = 1;
-            stateChange(states.SLOPE);
+            state = states.SLOPE;
             break stateChanging;
         }
         // reached foot of second slope --> SLOPE
         if (state === states.PLANE && ballPos[0] > P[8][0]-ballRadius/2) {
             ballPos[0] = P[8][0]-ballRadius/2;
             Si = 8;
-            stateChange(states.SLOPE);
+            state = states.SLOPE;
             break stateChanging;
         }
         // reached end of game canvas --> OFF
         if (ballPos[0] < P[0][0]+ballRadius) {
             ballPos =  [P[0][0]+ballRadius, P[0][1]];
-            stateChange(states.OFF);
+            state = states.OFF;
             break stateChanging;
         }
         // reached other end of game canvas
         if (ballPos[0] >= P[9][0]+ballRadius) {
-            ballPos =  [P[9][0]+ballRadius, P[9][1]];
-            console.log(ballPos)
+            // state = states.END;
+            vX= v * Math.cos(beta[9]);
+            vY = v * Math.sin(beta[9]);
             break stateChanging;
         }
         // when up the first slope --> THROW
         if (state===states.SLOPE && ballPos[0]>=P[2][0] && ballPos[0]<=P[3][0]) {
-            stateChange(states.THROW);
+            state = states.THROW;
+            vX= v * Math.cos(beta[1]);
+            vY = v * Math.sin(beta[1]);
             break stateChanging;
         }
         // when roll over water --> loose
         if ((state===states.PLANE|| state===states.PLANE_BACK) && 
             ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
-            stateChange(states.OFF);
+            // state = states.END;
+            // end = ends.WATER;
+            vX= v * Math.cos(beta[4]);
+            vY = v * Math.sin(beta[4]);
             ballPos[1] = -0.24;
+            if (ballPos[0]<=G[6][0]+ballRadius)
+                ballPos[0] = G[6][0]+ballRadius;
+            if (ballPos[0]>=G[7][0]-ballRadius)
+                ballPos[0] = G[7][0]-ballRadius;
             break stateChanging;
         }
         // when roll over hole --> win
         if ((state===states.PLANE || state===states.PLANE_BACK) && 
             (ballPos[0]>=P[6][0] && ballPos[0]<=P[7][0])) {
-            stateChange(states.OFF);
             hits++;
             ballPos[1] = -0.24;
+            if (ballPos[0]<=P[6][0]+ballRadius)
+                ballPos[0] = P[6][0]+ballRadius;
+            if (ballPos[0]>=P[7][0]-ballRadius)
+                ballPos[0] = P[7][0]-ballRadius;
             break stateChanging;
         }
     }
@@ -218,7 +232,7 @@ function draw() {
             if (state===states.OFF && JSON.stringify(ballPos) === "[0,0]") {
                 sign = 1;
                 v = 2*vClub;
-                stateChange(states.PLANE);
+                state = states.PLANE;
             }
         }
         clubPos[0] = clubPos[0]+vClub*dt;
@@ -227,13 +241,12 @@ function draw() {
             clubPos[0]=clubRest[0];
         }
     }
-
     
-    running: if (state !== states.OFF) {
+    running: if (state !== states.OFF && state !== states.END) {
         // collision
         let dMin = 1000;
         Si = -1;
-        for (let i=0; i<S.length-1; i++) {
+        for (let i=0; i<S.length; i++) {
             // vector from Point i to Ball pos
             let B = [ballPos[0]-P[i][0], ballPos[1]-P[i][1]];
             d = (S[i][0]*B[1] - S[i][1]*B[0]) / Sl[i];
@@ -244,21 +257,20 @@ function draw() {
                 if (d < dMin) dMin=d;
                 Si = i;
                 // lotfuß
-                F = [P[Si][0] + (lPart) * (P[Si+1][0]-P[Si][0]),
-                    P[Si][1] + (lPart) * (P[Si+1][1]-P[Si][1])];
+                F = [P[Si][0] + (lPart/Sl[Si]) * (P[Si+1][0]-P[Si][0]),
+                    P[Si][1] + (lPart/Sl[Si]) * (P[Si+1][1]-P[Si][1])];
             }
 
             if (dMin<0) {
-
                 // hit Water
                 if (Si===4) {
-                    stateChange(states.OFF);
+                    state = states.OFF;
                     ballPos[1] = -0.24;
                     break running;
                 } else
                 // hit Goal
                 if (Si===6) {
-                    stateChange(states.OFF);
+                    state = states.OFF;
                     hits++;
                     ballPos[1] = -0.24;
                     break running;
@@ -266,27 +278,36 @@ function draw() {
                 else {
                     ballPos = F;
                     
-                    // if (Si===8) {
-                    //     console.log("SAND")
-                    //    v = v/2;
-                    // }
-
-                    if (Si === 1 || Si === 8) {
-                        if (state === states.THROW){
-                            v = vX;
-                        }
-                        stateChange(states.SLOPE);
+                    if (Si === 1) {
+                        state = states.SLOPE;
                     } else if (Si === 2) {
-                        stateChange(states.SLOPE_DOWN);
-                        v = vX;
+                        if (state === states.THROW){
+                            let vDreh = dreh([vX,vY],beta[2]);
+                            v = vDreh[0];
+                        }
+                        state = states.SLOPE_DOWN;
+                    } else if (Si === 8) {
+                        if (state === states.THROW){
+                            let vDreh = dreh([vX,vY],beta[8]);
+                            v = vDreh[0]/3;
+                        }
+                        state = states.SLOPE;
+                    } else if (Si === 7) {
+                        if (state === states.THROW){
+                            v = vX/3;
+                        }
+                        state = states.PLANE;
                     }
                     else {
-                        stateChange(states.PLANE);
                         v = vX;
+                        state = states.PLANE;
                     }
                 }
             }
         }
+        let c =  cR[0];
+        if (Si >= 11) c = cR[1];
+        g1 = sign * g * (Math.sin(-beta[Si]) - c * Math.cos(-beta[Si]));
         
         if (state===states.THROW) {
             vX= vX-((cW*roh*A)/(2*m) * Math.sqrt(Math.pow(vX-vWind, 2) + vY*vY) * vX)*dt;
@@ -297,28 +318,22 @@ function draw() {
         }
         if (state === states.SLOPE) {
             v = v + g1*dt;
-            console.log("v: " + v)
             let vDreh = dreh([v,0],beta[Si]);
             ballPos[0] = ballPos[0] + vDreh[0]*dt;
             ballPos[1] = ballPos[1] + vDreh[1]*dt;
-            console.log("pos: " + ballPos);
-            console.log("vDreh: " + vDreh);
             if (ballPos[1] < 0) {
-                console.log("here?")
                 ballPos[1] = 0;
-                v = vDreh[0];
-                stateChange(states.PLANE_BACK);
+                if (Si === 8) v=v/3;
+                state = states.PLANE_BACK;
             }
         }
         else if (state === states.SLOPE_DOWN) {
-            v = v - g1*dt;
-            let vDreh = dreh([v,0],beta[Si]);
-            ballPos[0] = ballPos[0] + vDreh[0]*dt;
-            ballPos[1] = ballPos[1] + vDreh[1]*dt;
+            v = v + g1*dt;
+            ballPos[0] = ballPos[0] + v*dt;
+            ballPos[1] = ballPos[1] - v*dt;
             if (ballPos[1] < 0) {
                 ballPos[1] = 0;
-                v = vDreh[0];
-                stateChange(states.PLANE);
+                state = states.PLANE;
             }
         }
         else if (state === states.PLANE) {
@@ -327,7 +342,7 @@ function draw() {
             if (v <= 0) {
                 // stopping
                 v=0;
-                stateChange(states.OFF);
+                state = states.OFF;
                 break running;
             }
         }
@@ -337,7 +352,7 @@ function draw() {
             if (v >= 0) {
                 // stopping
                 v=0;
-                stateChange(states.OFF);
+                state = states.OFF;
                 break running;
             }
         }
@@ -413,55 +428,11 @@ function newB(){
     // wtf JS???? lemme just compare a goddamn array
     if (JSON.stringify(ballPos) !== "[0,0]") {
         tries++;
-        stateChange(states.OFF);
+        state = states.OFF;
         ballPos = [0, 0];
         Si = 0;
        
         vWind = (floor(random() * (100))-50)/3.6;
-    }
-}
-
-function stateChange(st) {
-    switch (st) {
-        case states.OFF: {
-            state = states.OFF;
-            break;
-        }
-        case states.PLANE: {
-            state = states.PLANE;
-            break;
-        }
-        case states.PLANE_BACK: {
-            state = states.PLANE_BACK;
-            break;
-        }
-        case states.SLOPE: {
-            state = states.SLOPE;
-            break;
-        }
-        case states.SLOPE_DOWN: {
-            state = states.SLOPE_DOWN;
-            break;
-        }
-        case states.THROW: {
-            state = states.THROW;
-            v0X= v * Math.cos(beta[Si]);
-            v0Y = v * Math.sin(beta[Si]);
-            vY = v0Y;
-            vX = v0X;
-            break;
-        }
-    }
-
-    console.log(state);
-
-    if (state !== states.OFF) {
-        let c =  cR[0];
-        if (Si >= 8) c = cR[1]; 
-        g1 = sign * g * (Math.sin(-beta[Si]) - c * Math.cos(-beta[Si]));
-        if (state === states.SLOPE_DOWN){
-            g1 = sign * g * (Math.sin(beta[Si]) - c * Math.cos(beta[Si]));
-        }
     }
 }
 
