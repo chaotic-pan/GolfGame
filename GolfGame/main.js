@@ -1,7 +1,7 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
 Elisabeth Kintzel, s0574186
-Übung 11, 11. Januar 2022, 00:00
+Übung 13, 25. Januar 2022, 00:00
  */
 
 let canvasWidth = window.innerWidth;
@@ -63,7 +63,7 @@ let beta = Array(9).fill(0);
 // ballRadius is only used to draw the ball, not for the Throw calculation
 let ballRadius = .06;
 // current ball position
-let ballPos = [0,0];
+let ballPos = [0, 0];
 
 // radius of the golf club head
 let clubRadius = .08;
@@ -73,6 +73,8 @@ let clubRest = [-ballRadius-clubRadius, clubRadius];
 let clubPos = clubRest.slice();
 // attenuation "Dämpfung" of club swing
 let damp = false;
+
+let ballRest = [0, 1.4*clubRadius];
 
 // frameRate (cannot be called "frameRate" cause apparently a internal function is already called like that)
 let frRate = 50;
@@ -127,18 +129,19 @@ let locked;
 let tries=1;
 let hits=0;
 
-let skyColor = '#dcebff';
-let grassColor = '#18c918';
-let dirtColor = '#f5aa42';
-let sandColor = '#fff61f';
-let waterColor = '#9696ff';
-let red = '#e34132';
-let green = '#35e332';
+let skyColor; let grassColor; let dirtColor; let sandColor; let waterColor;
+let red; let green; let nightColor;
+let gray1; let gray2; let gray3;
+let textColor; let nightText;
+
+let night = false;
 
 /* here are program-essentials to put */
 function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
+    
+    ballPos = ballRest.slice();
 
     for (let i=0; i<P.length-1; i++) {
         let x = P[i+1][0]-P[i][0];
@@ -173,13 +176,13 @@ function draw() {
             state = states.SLOPE;
             break stateChanging;
         }
-        // reached end of game canvas --> OFF
+        // reached right end of game canvas --> OFF
         if (ballPos[0] < P[0][0]+ballRadius) {
             ballPos =  [P[0][0]+ballRadius, P[0][1]];
             state = states.OFF;
             break stateChanging;
         }
-        // reached other end of game canvas
+        // reached left end of game canvas --> Yeet
         if (ballPos[0] >= P[9][0]+ballRadius) {
             // state = states.END;
             vX= v * Math.cos(beta[9]);
@@ -221,28 +224,46 @@ function draw() {
     }
     
     // start
-    if (!locked && clubPos[0]!==clubRest[0]) {
-        if (!damp && clubPos[0]>=clubRest[0]) {
-            damp = true;
-        }if (!damp) {
+    if (!locked && JSON.stringify(clubPos) !== JSON.stringify(clubRest)) {
+
+        let dis = Math.sqrt(Math.pow((ballPos[0]-clubPos[0]),2) + Math.pow((ballPos[1]+ballRadius-clubPos[1]),2));
+        dis = dis - ballRadius - clubRadius;
+        
+        if (clubPos[0] >= ballRest[0])  damp = true;
+        
+        if (dis <= 0) {
+            
+            let phi = Math.atan((ballPos[1]+ballRadius-clubPos[1]) / (ballPos[0]-clubPos[0])) /2;
+          
+            // start moving ball
+            if (state===states.OFF && JSON.stringify(ballPos) === JSON.stringify(ballRest)) {
+                sign = 1;
+                v = 2*vClub;
+                vX= v * Math.cos(phi);
+                vY = v * Math.sin(phi);
+                state = states.THROW;
+            }
+        }
+       
+        if (!damp) {
             vClub = vClub - (90 * (clubPos[0]-clubRest[0]))*dt;
         } else {
             vClub = vClub - (4*vClub + 90 * (clubPos[0]-clubRest[0]))*dt;
-            // start moving ball
-            if (state===states.OFF && JSON.stringify(ballPos) === "[0,0]") {
-                sign = 1;
-                v = 2*vClub;
-                state = states.PLANE;
-            }
         }
+        
         clubPos[0] = clubPos[0]+vClub*dt;
 
-        if (damp && clubPos[0]<=clubRest[0]) {
+        if (damp && clubPos[0]<clubRest[0]) {
             clubPos[0]=clubRest[0];
+            vClub = 0;
+            // didn't hit ball
+            if (state === states.OFF) {
+                tries++;
+            }
         }
     }
     
-    running: if (state !== states.OFF && state !== states.END) {
+    running: if (state !== states.OFF) {
         // collision
         let dMin = 1000;
         Si = -1;
@@ -271,7 +292,6 @@ function draw() {
                 // hit Goal
                 if (Si===6) {
                     state = states.OFF;
-                    hits++;
                     ballPos[1] = -0.24;
                     break running;
                 }
@@ -364,7 +384,7 @@ function draw() {
     // circle(x(F[0]), y(F[1]), 2*clubRadius*M);
     
     /* display */
-    drawFG();
+    drawForeground();
 }
 
 function x(coord){
@@ -385,8 +405,8 @@ function dreh(pos, angle) {
 }
 
 function mousePressed() {
-    if (mouseX >= x(-ballRadius) && mouseX <= x(-ballRadius-2*clubRadius) &&
-        mouseY >= y(2*clubRadius) && mouseY <= y(0)) {
+    if (mouseX >= x(clubPos[0]+clubRadius) && mouseX <= x(clubPos[0]-clubRadius) &&
+        mouseY >= y(clubPos[1]+clubRadius) && mouseY <= y(clubPos[1]-clubRadius)) {
         locked = true;
         vClub = 0;
         damp = false;
@@ -402,6 +422,10 @@ function mousePressed() {
         mouseY >= y(-.6) && mouseY <= y(-.9)) {
         newB();
     }
+    if (mouseX >= x(6.6) && mouseX <= x(5.9) &&
+        mouseY >= y(2.3) && mouseY <= y(2.15)) {
+        night=!night;
+    }
 
 }
 
@@ -410,6 +434,17 @@ function mouseDragged() {
         clubPos[0] = -(mouseX/M -iO[0]);
         if (clubPos[0] >= clubRest[0]) {
             clubPos[0] = clubRest[0];
+        }
+        if (clubPos[0] <= G[0][0]+clubRadius) {
+            clubPos[0] =  G[0][0]+clubRadius;
+        }
+        
+        clubPos[1] = -(mouseY/M -iO[1]);
+        if (clubPos[1] <= clubRadius) {
+            clubPos[1] = clubRadius;
+        }
+        if (clubPos[1] >= 5*clubRadius) {
+            clubPos[1] = 5*clubRadius;
         }
     }
 }
@@ -426,29 +461,29 @@ function resetB() {
 
 function newB(){
     // wtf JS???? lemme just compare a goddamn array
-    if (JSON.stringify(ballPos) !== "[0,0]") {
+    if (JSON.stringify(ballPos) !== JSON.stringify(ballRest)) {
         tries++;
         state = states.OFF;
-        ballPos = [0, 0];
+        ballPos = ballRest.slice();
+        clubPos = clubRest.slice();
         Si = 0;
        
         vWind = (floor(random() * (100))-50)/3.6;
     }
 }
 
-// foreground
-function drawFG() {
+function drawForeground() {
     //Flag
     stroke(0);
     strokeWeight(1);
-    fill(255, 68, 31);
+    fill(red);
     beginShape(TRIANGLES);
     vertex(x(5.25), y(1.2));
     vertex(x(5.25), y(1.02));
     vertex(x(5.25+(vWind*3.6)/100), y(1.11));
     endShape();
 
-    stroke(75);
+    stroke(gray1);
     strokeWeight(5);
     noFill();
     beginShape(LINES);
@@ -458,14 +493,14 @@ function drawFG() {
 
 
     // Golf club
-    stroke(75);
+    stroke(gray1);
     beginShape(LINES);
     vertex(x(clubPos[0]), y(clubPos[1]));
     vertex(x(clubRest[0]), y(1.2));
     endShape();
 
     strokeWeight(0);
-    fill(150);
+    fill(gray2);
     rectMode(CENTER);
     circle(x(clubPos[0]), y(clubPos[1]), 2*clubRadius*M);
 
@@ -473,7 +508,7 @@ function drawFG() {
     // Golf ball
     stroke(0);
     strokeWeight(1);
-    fill(240);
+    fill(gray3)
     rectMode(CENTER);
     //ball coordinates are set at the bottom of the ball
     //to display the ball properly the y coordinate need to be moved up by half the diameter
@@ -483,35 +518,23 @@ function drawFG() {
 function drawUI() {
     clear();
 
-    //game canvas / sky
-    stroke(0);
-    strokeWeight(1);
-    fill(skyColor);
-    beginShape();
-    vertex(x(6.6), y(2.1));
-    vertex(x(-.75), y(2.1));
-    vertex(x(-.75), y(-.42));
-    vertex(x(6.6), y(-.42));
-    endShape(CLOSE);
-
-    drawBG();
+    drawBackground();
 
     // headline
     stroke(0);
     strokeWeight(1);
     textAlign(CENTER, CENTER);
+    textStyle(NORMAL);
     textSize(.3 * M);
-    fill(grassColor);
+    fill(green);
     text("The ultimate Golf-Game", x(2.925), y(2.4));
 
-    // headline
-    textAlign(LEFT, BOTTOM);
+    // Hit Count
     strokeWeight(0);
     textSize(0.12 * M);
-    fill(50);
-    text("Tries: "+tries, x(6.6), y(2.13));
+    fill(textColor);
     textAlign(RIGHT, BOTTOM);
-    text("Hits: "+hits, x(-.75), y(2.13));
+    text("Hits: "+hits + "/"+tries, x(-.7), y(2.13));
 
     // buttons
     stroke(0);
@@ -520,38 +543,109 @@ function drawUI() {
     textAlign(CENTER, CENTER);
     fill(green);
     rect(x(.15), y(-.6), .9* M, .3* M);
-    textAlign(CENTER);
 
     fill(red);
     rect(x(6.6), y(-.6), .9 * M, .3 * M);
-    textAlign(CENTER);
-
-    fill(255);
+    
+    fill(textColor);
     strokeWeight(0);
     textSize(0.15 * M);
     text("NEW", x(-.3), y(-.75));
     text("RESET", x(6.15), y(-.75));
+    
+    fill(nightColor);
+    strokeWeight(1);
+    rect(x(6.6), y(2.3), .7 * M, .15 * M);
+    fill(nightText);
+    textAlign(CENTER);
+    strokeWeight(0);
+    textStyle(BOLD);
+    textSize(0.08 * M);
+    let str = "Nightmode";
+    if (night) str = "Lightmode";
+    text(str, x(6.25), y(2.225));
+    
 }
 
-// background
-function drawBG(){
-    fill(dirtColor);
+function drawBackground(){
+    
+    if (night) {
+        background('#202424');
+        skyColor = '#1a2133';
+        grassColor = '#074107';
+        dirtColor = '#49391e';
+        sandColor = '#77752c';
+        waterColor = '#38386b';
+        red = '#641c16';
+        green = '#165b15';
+        gray1 = 40;
+        gray2 = 75;
+        gray3 = 150;
+        textColor = '#989898';
+        nightColor = '#4c5454';
+        nightText = '#131515';
+    } else {
+        background('#ffffff');
+        skyColor = '#e6efff';
+        grassColor = '#18c918';
+        dirtColor = '#f5aa42';
+        sandColor = '#fff61f';
+        waterColor = '#9696ff';
+        red = '#e34132';
+        green = '#35e332';
+        gray1 = 75;
+        gray2 = 150;
+        gray3 = 240;
+        textColor = '#ffffff';
+        nightColor = '#707c7c'; 
+        nightText = '#2e3333';
+    }
+    
+    let gradient = drawingContext.createLinearGradient(1,y(2.1), 1,y(-.42));
+    gradient.addColorStop(0, skyColor);
+    if (night) gradient.addColorStop(1, '#0e131c');
+    else gradient.addColorStop(1, '#b0d1ff');
+    drawingContext.fillStyle = gradient;
+
+    rectMode(CORNER);
+    rect(x(6.6), y(2.1), 7.35*M, 2.52*M);
+    
+    // moon
+    if (night) {
+        strokeWeight(0);
+        fill('#b6b432');
+        rectMode(CENTER);
+        circle(x(5.9), y(1.5), .8*M);
+
+        drawingContext.fillStyle = gradient;
+        rectMode(CENTER);
+        circle(x(5.8), y(1.6), .6*M);
+    }
+
+    //Ground
+    fill(dirtColor)
+    strokeWeight(0);
     beginShape(TESS);
     for (let i=0; i<G.length; i++) {
         vertex(x(G[i][0]), y(G[i][1]));
     }
     endShape(CLOSE);
 
-    stroke(100, 100, 255);
-    strokeWeight(3);
-    fill(waterColor);
+    // Water
+    gradient = drawingContext.createLinearGradient(1,y(-.06), 1,y(G[7][1]));
+    gradient.addColorStop(0, waterColor);
+    if (night) gradient.addColorStop(1, '#2e2e5e');
+    else gradient.addColorStop(1, '#6f6fdc');
+    drawingContext.fillStyle = gradient;
+    
     beginShape(TESS);
-    vertex(x(3.945), y(-.06));
+    vertex(x(3.95), y(-.06));
     vertex(x(G[7][0]), y(G[7][1]));
     vertex(x(G[6][0]), y(G[6][1]));
     vertex(x(3.375), y(-.06));
     endShape(CLOSE);
 
+    // Grass
     stroke(grassColor);
     strokeWeight(5);
     noFill();
@@ -563,6 +657,7 @@ function drawBG(){
     }
     endShape();
 
+    // Sand
     stroke(sandColor);
     strokeWeight(5);
     noFill();
@@ -572,6 +667,15 @@ function drawBG(){
         vertex(x(P[sand[i]][0]), y(P[sand[i]][1]));
     }
     endShape();
+    
+    // Tee
+    strokeWeight(0);
+    fill(gray2);
+    beginShape(TESS);
+    vertex(x(ballRest[0]+ballRadius/2), y(ballRest[1]));
+    vertex(x(ballRest[0]-ballRadius/2), y(ballRest[1]));
+    vertex(x(ballRest[0]), y(0));
+    endShape(CLOSE);
 }
 
 function windowResized() {					/* responsive part */
