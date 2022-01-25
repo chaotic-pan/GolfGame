@@ -181,7 +181,7 @@ function draw() {
             break stateChanging;
         }
         // stop ball from rolling out of water again
-        if (ballPos[1] < -ballRadius && ballPos[0] > G[7][0]-ballRadius/2 && ballPos[0] < G[8][0]) {
+        if (ballPos[1] < -2*ballRadius && ballPos[0] > G[7][0]-ballRadius/2 && ballPos[0] < G[8][0]) {
             ballPos[0] = ballPos[0] -ballRadius/2;
             ballPos[1] = G[7][1];
             v = 0;
