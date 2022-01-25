@@ -1,7 +1,7 @@
 # The Ultimate Golf-Game
 
 ## Overview
-Golf Game is a physics-based game, written in JavaScript. 
+*The Ultimate Golf-Game* is a physics-based game, written with p5.js, a JavaScript graphics library. 
 It can be played in any browser, just open the index.html file, and the game is ready to be played.
 
 ## Controls
