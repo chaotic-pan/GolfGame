@@ -180,6 +180,14 @@ function draw() {
             vY = v * Math.sin(beta[Si]);
             break stateChanging;
         }
+        // stop ball from rolling out of water again
+        if (ballPos[1] < -ballRadius && ballPos[0] > G[7][0]-ballRadius/2 && ballPos[0] < G[8][0]) {
+            ballPos[0] = ballPos[0] -ballRadius/2;
+            ballPos[1] = G[7][1];
+            v = 0;
+            state = states.OFF;
+            break stateChanging;
+        }
         // when roll over water --> loose
         if ((ballPos[0]>=G[5][0] && ballPos[0]<=G[8][0]) &&  ballPos[1] <= 0){
             if (state===states.PLANE || state===states.PLANE_BACK) {
@@ -269,7 +277,6 @@ function draw() {
             }
             
             
-            
             // vector from Point i to Ball pos
             let B = [ballPos[0]-G[i+1][0], ballPos[1]-G[i+1][1]];
             d = (S[i][0]*B[1] - S[i][1]*B[0]) / Sl[i];
@@ -290,6 +297,7 @@ function draw() {
             //     G[i+1][1] + (lPart/Sl[i]) * (G[i+2][1]-G[i+1][1])];
             // strokeWeight(0);
             // fill('#0fadd5');
+            // if (i===6) fill('#ff6914');
             // rectMode(CENTER);
             // circle(x(P[0]), y(P[1]), clubRadius*M);
             //
@@ -486,9 +494,10 @@ function newB(){
         Si = 0;
         oldHits = hits;
         water = false; goal = false;
-       
+        
         vWind = (floor(random() * (100))-50)/3.6;
     }
+   
 }
 
 function drawForeground() {
