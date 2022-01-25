@@ -22,43 +22,28 @@ let G = [
     [1.95, .45],     // 3
     [2.85, 0],       // 4
     // Water Hole
-    [3.36, 0],      // 5
+    [3.36, 0],       // 5
     [3.42, -.24],    // 6
-    [3.9, -.24],      // 7
-    [3.96, 0],      // 8
+    [3.9, -.24],     // 7
+    [3.96, 0],       // 8
     //Hole
-    [4.89, 0],      // 9
-    [4.89, -.24],    // 10
-    [5.07,-.24],     // 11
-    [5.07,0],       // 12
+    [4.89, 0],       // 9
+    [4.90, -.24],    // 10
+    [5.06,-.24],     // 11
+    [5.07,0],        // 12
     //Sand Hill
     [5.7,0],         // 13
     [6.6, .87],      // 14
     [6.6,-.42],      // 15
 ];
-
-let P = [
-    G[1],           // 0
-    G[2],           // 1
-    G[3],           // 2
-    G[4],           // 3
-    G[5],           // 4
-        //Water
-    G[8],           // 5
-    G[9],           // 6
-        //Hole
-    G[12],          // 7
-    G[13],          // 8
-    G[14],          // 9
-];
 // surface Segments vectors
-let S = Array(9).fill(0);
+let S = Array(G.length-2).fill(0);
 // lenght of surface Segments vectors
-let Sl = Array(9).fill(0);
+let Sl = Array(G.length-2).fill(0);
 let Si = 0;
 
 // angles of the playground
-let beta = Array(9).fill(0);
+let beta = Array(G.length-2).fill(0);
 
 // ballRadius is only used to draw the ball, not for the Throw calculation
 let ballRadius = .06;
@@ -122,103 +107,104 @@ let states = {
 };
 // current state
 let state = states.OFF;
+let water = false; let goal = false;
 
 // locks Mouse down for club interaction
 let locked;
 
-let tries=1;
-let hits=0;
+let tries = 1;
+let hits = 0;
+let oldHits = 0;
 
 let skyColor; let grassColor; let dirtColor; let sandColor; let waterColor;
 let red; let green; let nightColor;
 let gray1; let gray2; let gray3;
 let textColor; let nightText;
 
-let night = false;
+let night = true;
 
-/* here are program-essentials to put */
 function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
     
     ballPos = ballRest.slice();
 
-    for (let i=0; i<P.length-1; i++) {
-        let x = P[i+1][0]-P[i][0];
-        let y = P[i+1][1]-P[i][1];
+    for (let i=0; i<G.length-2; i++) {
+        let x = G[i+2][0]-G[i+1][0];
+        let y = G[i+2][1]-G[i+1][1];
         S[i]= [x,y];
         
         Sl[i] = Math.sqrt(Math.pow(S[i][0],2)+Math.pow(S[i][1],2));
 
-        beta[i] = Math.atan((P[i+1][1]-P[i][1])/(P[i+1][0]-P[i][0]));
+        beta[i] = Math.atan((G[i+2][1]-G[i+1][1])/(G[i+2][0]-G[i+1][0]));
     }
 }
 
-/* here is the dynamic part to put */
 function draw() {
-
-    /* administrative work */
+    
     drawUI();
-
-    /* calculations */
+    
     stateChanging: {
         // reached foot of first slope --> SLOPE
-        if (state === states.PLANE && ballPos[0] > P[1][0]-ballRadius/2 && ballPos[0] < P[2][0]) {
-            ballPos[0] = P[1][0]-ballRadius/2;
+        if (state === states.PLANE && ballPos[0] > G[2][0]-ballRadius/2 && ballPos[0] < G[3][0]) {
+            ballPos[0] = G[2][0]-ballRadius/2;
             Si = 1;
             state = states.SLOPE;
             break stateChanging;
         }
         // reached foot of second slope --> SLOPE
-        if (state === states.PLANE && ballPos[0] > P[8][0]-ballRadius/2) {
-            ballPos[0] = P[8][0]-ballRadius/2;
-            Si = 8;
+        if (state === states.PLANE && ballPos[0] > G[13][0]-ballRadius/2) {
+            ballPos[0] = G[13][0]-ballRadius/2;
+            Si = 12;
             state = states.SLOPE;
             break stateChanging;
         }
         // reached right end of game canvas --> OFF
-        if (ballPos[0] < P[0][0]+ballRadius) {
-            ballPos =  [P[0][0]+ballRadius, P[0][1]];
+        if (ballPos[0] < G[1][0]+ballRadius) {
+            ballPos = [G[1][0]+ballRadius, G[1][1]];
             state = states.OFF;
             break stateChanging;
         }
         // reached left end of game canvas --> Yeet
-        if (ballPos[0] >= P[9][0]+ballRadius) {
-            // state = states.END;
-            vX= v * Math.cos(beta[9]);
-            vY = v * Math.sin(beta[9]);
+        if (ballPos[0] >= G[14][0]+ballRadius) {
+            Si = 12;
+            vX= v * Math.cos(beta[Si]);
+            vY = v * Math.sin(beta[Si]);
             break stateChanging;
         }
         // when up the first slope --> THROW
-        if (state===states.SLOPE && ballPos[0]>=P[2][0] && ballPos[0]<=P[3][0]) {
+        if (state===states.SLOPE && ballPos[0]>=G[3][0] && ballPos[0]<G[4][0]) {
             state = states.THROW;
-            vX= v * Math.cos(beta[1]);
-            vY = v * Math.sin(beta[1]);
+            Si = 1;
+            vX= v * Math.cos(beta[Si]);
+            vY = v * Math.sin(beta[Si]);
             break stateChanging;
         }
         // when roll over water --> loose
-        if ((state===states.PLANE|| state===states.PLANE_BACK) && 
-            ballPos[0]>=P[4][0] && ballPos[0]<=P[5][0]) {
-            // state = states.END;
-            // end = ends.WATER;
-            vX= v * Math.cos(beta[4]);
-            vY = v * Math.sin(beta[4]);
-            ballPos[1] = -0.24;
-            if (ballPos[0]<=G[6][0]+ballRadius)
-                ballPos[0] = G[6][0]+ballRadius;
-            if (ballPos[0]>=G[7][0]-ballRadius)
-                ballPos[0] = G[7][0]-ballRadius;
+        if ((ballPos[0]>=G[5][0] && ballPos[0]<=G[8][0]) &&  ballPos[1] <= 0){
+            if (state===states.PLANE || state===states.PLANE_BACK) {
+                Si = 3;
+                state = states.THROW;
+                vX= v * Math.cos(beta[Si]);
+                vY = v * Math.sin(beta[Si]);
+            }
+            console.log("water");
+            water = true;
             break stateChanging;
         }
         // when roll over hole --> win
-        if ((state===states.PLANE || state===states.PLANE_BACK) && 
-            (ballPos[0]>=P[6][0] && ballPos[0]<=P[7][0])) {
-            hits++;
-            ballPos[1] = -0.24;
-            if (ballPos[0]<=P[6][0]+ballRadius)
-                ballPos[0] = P[6][0]+ballRadius;
-            if (ballPos[0]>=P[7][0]-ballRadius)
-                ballPos[0] = P[7][0]-ballRadius;
+        if ((ballPos[0]>=G[9][0]  && ballPos[0]<=G[12][0]) &&  ballPos[1] <= 0){
+            if (state===states.PLANE || state===states.PLANE_BACK) {
+                Si = 7;
+                state = states.THROW;
+                vX= v * Math.cos(beta[Si]);
+                vY = v * Math.sin(beta[Si]);
+            }
+            console.log("goal");
+            goal = true;
+            if (oldHits === hits) {
+                hits++;
+            }
             break stateChanging;
         }
     }
@@ -229,7 +215,9 @@ function draw() {
         let dis = Math.sqrt(Math.pow((ballPos[0]-clubPos[0]),2) + Math.pow((ballPos[1]+ballRadius-clubPos[1]),2));
         dis = dis - ballRadius - clubRadius;
         
-        if (clubPos[0] >= ballRest[0])  damp = true;
+        if (clubPos[0] >= clubRest[0]) {
+            damp = true;
+        } 
         
         if (dis <= 0) {
             
@@ -266,65 +254,89 @@ function draw() {
     running: if (state !== states.OFF) {
         // collision
         let dMin = 1000;
-        Si = -1;
-        for (let i=0; i<S.length; i++) {
+        for (let i=0; i<S.length-1; i++) {
+            if (!water && (i === 4 || i === 5 || i === 6)
+                && (ballPos[0]<G[5][0] || ballPos[0]>G[8][0]+2*ballRadius))
+                 continue;
+            if (!goal && (i === 8 || i === 9 || i === 10)
+                && (ballPos[0]<G[9][0] || ballPos[0]>G[12][0]+2*ballRadius))
+                 continue;   
+            if (water) {
+                if (i !== 4 && i !== 5 && i !== 6) continue 
+            }
+            if (goal) {
+                if (i !== 8 && i !== 9 && i !== 10) continue
+            }
+            
+            
+            
             // vector from Point i to Ball pos
-            let B = [ballPos[0]-P[i][0], ballPos[1]-P[i][1]];
+            let B = [ballPos[0]-G[i+1][0], ballPos[1]-G[i+1][1]];
             d = (S[i][0]*B[1] - S[i][1]*B[0]) / Sl[i];
             lPart = (S[i][0]*B[0] + S[i][1]*B[1]) / Sl[i];
-
             
             if (lPart > 0 && lPart < Sl[i]) {
-                if (d < dMin) dMin=d;
-                Si = i;
-                // lotfuß
-                F = [P[Si][0] + (lPart/Sl[Si]) * (P[Si+1][0]-P[Si][0]),
-                    P[Si][1] + (lPart/Sl[Si]) * (P[Si+1][1]-P[Si][1])];
+                if (d < dMin) {
+                    dMin=d;
+                    Si = i;
+                    // lotFuß
+                    F = [G[Si+1][0] + (lPart/Sl[Si]) * (G[Si+2][0]-G[Si+1][0]),
+                        G[Si+1][1] + (lPart/Sl[Si]) * (G[Si+2][1]-G[Si+1][1])]; 
+                }
             }
 
+            /* Debug Stuff */
+            // let P = [G[i+1][0] + (lPart/Sl[i]) * (G[i+2][0]-G[i+1][0]),
+            //     G[i+1][1] + (lPart/Sl[i]) * (G[i+2][1]-G[i+1][1])];
+            // strokeWeight(0);
+            // fill('#0fadd5');
+            // rectMode(CENTER);
+            // circle(x(P[0]), y(P[1]), clubRadius*M);
+            //
+            // fill(255);
+            // textSize(.8*clubRadius*M)
+            // text(i, x(P[0]), y(P[1]));
+            
             if (dMin<0) {
-                // hit Water
-                if (Si===4) {
-                    state = states.OFF;
-                    ballPos[1] = -0.24;
-                    break running;
-                } else
-                // hit Goal
-                if (Si===6) {
-                    state = states.OFF;
-                    ballPos[1] = -0.24;
-                    break running;
-                }
-                else {
-                    ballPos = F;
-                    
-                    if (Si === 1) {
-                        state = states.SLOPE;
-                    } else if (Si === 2) {
-                        if (state === states.THROW){
-                            let vDreh = dreh([vX,vY],beta[2]);
-                            v = vDreh[0];
-                        }
-                        state = states.SLOPE_DOWN;
-                    } else if (Si === 8) {
-                        if (state === states.THROW){
-                            let vDreh = dreh([vX,vY],beta[8]);
-                            v = vDreh[0]/3;
-                        }
-                        state = states.SLOPE;
-                    } else if (Si === 7) {
-                        if (state === states.THROW){
-                            v = vX/3;
-                        }
-                        state = states.PLANE;
+                ballPos = F;
+                
+                if (Si === 1) {
+                    if (state === states.THROW){
+                        let vDreh = dreh([vX,vY],beta[Si]);
+                        v = vDreh[0];
                     }
-                    else {
+                    state = states.SLOPE;        
+                } else if (Si === 2 || Si === 4 || Si === 8) {
+                    if (state === states.THROW){
                         v = vX;
-                        state = states.PLANE;
                     }
+                    state = states.SLOPE_DOWN;
+                } else if (Si === 11) {
+                    if (state === states.THROW){
+                        v = vX/3;
+                    }
+                    state = states.PLANE;
+                } else if (Si === 6 || Si === 10) {
+                    if (state === states.THROW){
+                        v = 0;
+                    }
+                    state = states.SLOPE;
+                }
+                else if (Si === 12) {
+                    if (state === states.THROW){
+                        let vDreh = dreh([vX,vY],beta[Si]);
+                        v = vDreh[0]/3;
+                    }
+                    state = states.SLOPE;
+                } else {
+                    if (state === states.THROW){
+                        v = vX;
+                    }
+                    state = states.PLANE;
                 }
             }
         }
+        
         let c =  cR[0];
         if (Si >= 11) c = cR[1];
         g1 = sign * g * (Math.sin(-beta[Si]) - c * Math.cos(-beta[Si]));
@@ -336,14 +348,15 @@ function draw() {
             ballPos[0] = ballPos[0] + vX * dt;
             ballPos[1] = ballPos[1] + vY * dt;
         }
-        if (state === states.SLOPE) {
+        else if (state === states.SLOPE) {
             v = v + g1*dt;
             let vDreh = dreh([v,0],beta[Si]);
             ballPos[0] = ballPos[0] + vDreh[0]*dt;
             ballPos[1] = ballPos[1] + vDreh[1]*dt;
-            if (ballPos[1] < 0) {
+            if (Si !== 6 && Si !== 10 && ballPos[1] < 0) {
                 ballPos[1] = 0;
-                if (Si === 8) v=v/3;
+                // landing in Sand
+                if (Si === 12) v=v/3;
                 state = states.PLANE_BACK;
             }
         }
@@ -351,7 +364,7 @@ function draw() {
             v = v + g1*dt;
             ballPos[0] = ballPos[0] + v*dt;
             ballPos[1] = ballPos[1] - v*dt;
-            if (ballPos[1] < 0) {
+            if (Si !== 4 && Si !== 8 && ballPos[1] < 0) {
                 ballPos[1] = 0;
                 state = states.PLANE;
             }
@@ -378,12 +391,16 @@ function draw() {
         }
     }
 
+    /* Debug Stuff */
     // strokeWeight(0);
     // fill('#0fadd5');
     // rectMode(CENTER);
-    // circle(x(F[0]), y(F[1]), 2*clubRadius*M);
+    // circle(x(F[0]), y(F[1]), clubRadius*M);
+    //
+    // fill(0);
+    // textSize(.8*clubRadius*M)
+    // text(Si, x(F[0]), y(F[1]));
     
-    /* display */
     drawForeground();
 }
 
@@ -467,6 +484,8 @@ function newB(){
         ballPos = ballRest.slice();
         clubPos = clubRest.slice();
         Si = 0;
+        oldHits = hits;
+        water = false; goal = false;
        
         vWind = (floor(random() * (100))-50)/3.6;
     }
@@ -532,7 +551,7 @@ function drawUI() {
     // Hit Count
     strokeWeight(0);
     textSize(0.12 * M);
-    fill(textColor);
+    fill(nightColor);
     textAlign(RIGHT, BOTTOM);
     text("Hits: "+hits + "/"+tries, x(-.7), y(2.13));
 
@@ -619,7 +638,7 @@ function drawBackground(){
 
         drawingContext.fillStyle = gradient;
         rectMode(CENTER);
-        circle(x(5.8), y(1.6), .6*M);
+        circle(x(5.77), y(1.56), .6*M);
     }
 
     //Ground
@@ -651,9 +670,9 @@ function drawBackground(){
     noFill();
     beginShape(LINES);
     //Points between which the grass line needs to be drawn
-    let grass = [0,1, 1,2, 2,3, 3,4, 5,6];
+    let grass = [1,2, 2,3, 3,4, 4,5, 8,9];
     for (let i=0; i<grass.length; i++) {
-        vertex(x(P[grass[i]][0]), y(P[grass[i]][1]));
+        vertex(x(G[grass[i]][0]), y(G[grass[i]][1]));
     }
     endShape();
 
@@ -662,9 +681,9 @@ function drawBackground(){
     strokeWeight(5);
     noFill();
     beginShape(LINES);
-    let sand = [7,8, 8,9];
+    let sand = [12,13, 13,14];
     for (let i=0; i<sand.length; i++) {
-        vertex(x(P[sand[i]][0]), y(P[sand[i]][1]));
+        vertex(x(G[sand[i]][0]), y(G[sand[i]][1]));
     }
     endShape();
     
