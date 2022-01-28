@@ -1,7 +1,6 @@
 /* template GTAT2 Game Technology & Interactive Systems */
 /*
-Elisabeth Kintzel, s0574186
-Übung 13, 25. Januar 2022, 00:00
+Liz Kintzel
  */
 
 let canvasWidth = window.innerWidth;
@@ -53,11 +52,12 @@ let ballPos = [0, 0];
 // radius of the golf club head
 let clubRadius = .08;
 // resting point of club
-let clubRest = [-ballRadius-clubRadius, clubRadius];
+let clubRest = [-.25, clubRadius];
 // current club position
 let clubPos = clubRest.slice();
 // attenuation "Dämpfung" of club swing
 let damp = false;
+let l;
 
 let ballRest = [0, 1.4*clubRadius];
 
@@ -435,6 +435,7 @@ function mousePressed() {
         locked = true;
         vClub = 0;
         damp = false;
+        l = null;
         return;
     }
 
@@ -460,22 +461,20 @@ function mouseDragged() {
         if (clubPos[0] >= clubRest[0]) {
             clubPos[0] = clubRest[0];
         }
-        if (clubPos[0] <= G[0][0]+clubRadius) {
-            clubPos[0] =  G[0][0]+clubRadius;
-        }
         
         clubPos[1] = -(mouseY/M -iO[1]);
-        if (clubPos[1] <= clubRadius) {
-            clubPos[1] = clubRadius;
-        }
-        if (clubPos[1] >= 5*clubRadius) {
-            clubPos[1] = 5*clubRadius;
-        }
     }
 }
 
 function mouseReleased() {
     locked = false;
+    
+    let clubAnchor = [clubRest[0], 1.2];
+    let club = [clubPos[0]-clubAnchor[0], clubPos[1]-clubAnchor[1]];
+    l = Math.sqrt(Math.pow(club[0],2)+Math.pow(club[1],2));
+
+    if (l < .8) l = .8;
+    if (l > 1.2) l = 1.12;
 }
 
 function resetB() {
@@ -494,8 +493,12 @@ function newB(){
         Si = 0;
         oldHits = hits;
         water = false; goal = false;
+        l = null;
         
         vWind = (floor(random() * (100))-50)/3.6;
+    } else if (JSON.stringify(clubPos) !== JSON.stringify(clubRest)) {
+        clubPos = clubRest.slice();
+        l = null;
     }
    
 }
@@ -521,10 +524,32 @@ function drawForeground() {
 
 
     // Golf club
+    
+    let clubAnchor = [clubRest[0], 1.2];
+    let club = [clubPos[0]-clubAnchor[0], clubPos[1]-clubAnchor[1]];
+    let lenght = Math.sqrt(Math.pow(club[0],2)+Math.pow(club[1],2));
+    
+    if (lenght < .8) {
+        clubPos = [clubAnchor[0] + (.8/lenght) * (club[0]),
+            clubAnchor[1] + (.8/lenght) * (club[1])];
+    }
+    if (lenght > 1.2) {
+        clubPos = [clubAnchor[0] + (1.12/lenght) * (club[0]),
+            clubAnchor[1] + (1.12/lenght) * (club[1])];
+    }
+    
+    if (l != null) {
+        console.log("AAA")
+        if (lenght !== l) {
+            clubPos = [clubAnchor[0] + (l / lenght) * (club[0]),
+                clubAnchor[1] + (l / lenght) * (club[1])];
+        }
+    } 
+    
     stroke(gray1);
     beginShape(LINES);
     vertex(x(clubPos[0]), y(clubPos[1]));
-    vertex(x(clubRest[0]), y(1.2));
+    vertex(x(clubAnchor[0]), y(clubAnchor[1]));
     endShape();
 
     strokeWeight(0);
