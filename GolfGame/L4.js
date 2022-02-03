@@ -233,8 +233,14 @@ function draw() {
         
         if (clubPos[0] >= clubRest[0]) {
             damp = true;
-        } 
+        }
         
+        if (!damp) {
+            vClub = vClub - (90 * (clubPos[0]-clubRest[0]))*dt;
+        } else {
+            vClub = vClub - (4*vClub + 90 * (clubPos[0]-clubRest[0]))*dt;
+        }
+
         if (dis <= 0) {
             
             let phi = Math.atan((ballPos[1]+ballRadius-clubPos[1]) / (ballPos[0]-clubPos[0])) /2;
@@ -247,12 +253,6 @@ function draw() {
                 vY = v * Math.sin(phi);
                 state = states.THROW;
             }
-        }
-       
-        if (!damp) {
-            vClub = vClub - (90 * (clubPos[0]-clubRest[0]))*dt;
-        } else {
-            vClub = vClub - (4*vClub + 90 * (clubPos[0]-clubRest[0]))*dt;
         }
         
         clubPos[0] = clubPos[0]+vClub*dt;
