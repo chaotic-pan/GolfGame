@@ -196,7 +196,6 @@ function draw() {
                 vX= v * Math.cos(beta[Si]);
                 vY = v * Math.sin(beta[Si]);
             }
-            console.log("water");
             water = true;
             break stateChanging;
         }
@@ -208,7 +207,6 @@ function draw() {
                 vX= v * Math.cos(beta[Si]);
                 vY = v * Math.sin(beta[Si]);
             }
-            console.log("goal");
             goal = true;
             if (oldHits === hits) {
                 hits++;
@@ -526,6 +524,8 @@ function drawForeground() {
     // Golf club
     
     let clubAnchor = [clubRest[0], 1.2];
+    // stop club from being pull back more than 90°
+    if (clubPos[1] > clubAnchor[1]) clubPos[1] = clubAnchor[1];
     let club = [clubPos[0]-clubAnchor[0], clubPos[1]-clubAnchor[1]];
     let lenght = Math.sqrt(Math.pow(club[0],2)+Math.pow(club[1],2));
     
@@ -533,13 +533,12 @@ function drawForeground() {
         clubPos = [clubAnchor[0] + (.8/lenght) * (club[0]),
             clubAnchor[1] + (.8/lenght) * (club[1])];
     }
-    if (lenght > 1.2) {
+    if (lenght > 1.12) {
         clubPos = [clubAnchor[0] + (1.12/lenght) * (club[0]),
             clubAnchor[1] + (1.12/lenght) * (club[1])];
     }
     
     if (l != null) {
-        console.log("AAA")
         if (lenght !== l) {
             clubPos = [clubAnchor[0] + (l / lenght) * (club[0]),
                 clubAnchor[1] + (l / lenght) * (club[1])];
