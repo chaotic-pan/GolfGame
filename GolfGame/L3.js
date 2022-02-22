@@ -29,17 +29,9 @@ let Si = 0;
 // angles of the playground
 let beta = Array(G.length-2).fill(0);
 
-function changeBG() {
-    window.location.href = "index.html";
-}
-
 function setup() {
     createCanvas(windowWidth, windowHeight);
     frameRate(frRate);
-
-    let button = createButton('click me');
-    button.position(0, 0);
-    button.mousePressed(changeBG);
     
     ballPos = ballRest.slice();
 

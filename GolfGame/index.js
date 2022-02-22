@@ -20,10 +20,11 @@ let G = [
 function setup() {
     createCanvas(windowWidth, windowHeight);
 
+    ballPos = ballRest.slice();
+
     if (sessionStorage.getItem("night") === null) {
         sessionStorage.setItem("night", "1");
     }
-   
 }
 
 function draw() {

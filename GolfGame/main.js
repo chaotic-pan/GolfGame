@@ -89,6 +89,16 @@ let gray1; let gray2; let gray3;
 let textColor; let nightText;
 
 let night =  sessionStorage.getItem("night");
+let moon, sun, homeB, homeW, tutB, tutW;
+
+function preload() {
+    moon = loadImage("moon.png");
+    sun = loadImage("sun.png");
+    homeB = loadImage('homeB.png');
+    homeW = loadImage('homeW.png');
+    tutB = loadImage("tutorialB.png");
+    tutW = loadImage("tutorialW.png");
+}
 
 function x(coord){
     return (-coord+iO[0])*M;
@@ -135,7 +145,6 @@ function mousePressed() {
     else {
         l = null;
 
-
         if (mouseX >= x(clubPos[0] + clubRadius) && mouseX <= x(clubPos[0] - clubRadius) &&
             mouseY >= y(clubPos[1] + clubRadius) && mouseY <= y(clubPos[1] - clubRadius)) {
             locked = true;
@@ -153,14 +162,26 @@ function mousePressed() {
             mouseY >= y(-.6) && mouseY <= y(-.9)) {
             newB();
         }
+
+        if (mouseX >= x(6.6) && mouseX <= x(6.4) &&
+            mouseY >= y(2.35) && mouseY <= y(2.15)) {
+            window.location.href = "index.html";
+        }
     }
     
-    if (mouseX >= x(6.6) && mouseX <= x(5.9) &&
-        mouseY >= y(2.3) && mouseY <= y(2.15)) {
+    if (mouseX >= x(6.35) && mouseX <= x(6.15) &&
+        mouseY >= y(2.35) && mouseY <= y(2.15)) {
         if (night === "0") night="1";
         else night="0";
         sessionStorage.setItem("night", night);
     }
+    
+    // if (mouseX >= x(6.1) && mouseX <= x(5.9) &&
+    //     mouseY >= y(2.35) && mouseY <= y(2.15)) {
+    //     if (night === "0") night="1";
+    //     else night="0";
+    //     sessionStorage.setItem("night", night);
+    // }
 
 }
 
@@ -327,17 +348,21 @@ function drawMainUI() {
     rectMode(CORNER);
     fill(nightColor);
     strokeWeight(1);
-    rect(x(6.6), y(2.3), .7 * M, .15 * M);
-    fill(nightText);
-    textAlign(CENTER);
-    strokeWeight(0);
-    textStyle(BOLD);
-    textSize(0.08 * M);
-    let str = "Nightmode";
-    let night =  sessionStorage.getItem("night");
-    if (night==="1") str = "Lightmode";
-    text(str, x(6.25), y(2.225));
+    rect(x(6.6), y(2.35), .2 * M, .2 * M);
+    rect(x(6.35), y(2.35), .2 * M, .2 * M);
+    // rect(x(6.1), y(2.35), .2 * M, .2 * M);
 
+    if (night==="1") {
+        image(homeB, x(6.6), y(2.35), .2 * M, .2 * M);
+        image(moon, x(6.35), y(2.35), .2 * M, .2 * M);
+        // image(tutB, x(6.1), y(2.35), .2 * M, .2 * M);
+
+    }
+    else {
+        image(homeW, x(6.6), y(2.35), .2 * M, .2 * M);
+        image(sun, x(6.35), y(2.35), .2 * M, .2 * M);
+        // image(tutW, x(6.1), y(2.35), .2 * M, .2 * M);
+    }
 }
 
 function drawGameUI() {
@@ -397,7 +422,6 @@ function drawForeground(flagHeight) {
     endShape(CLOSE);
 
     // Golf club
-
     let clubAnchor = [clubRest[0], 1.2];
     // stop club from being pull back more than 90°
     if (clubPos[1] > clubAnchor[1]) clubPos[1] = clubAnchor[1];
