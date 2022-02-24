@@ -89,15 +89,17 @@ let gray1; let gray2; let gray3;
 let textColor; let nightText;
 
 let night =  sessionStorage.getItem("night");
-let moon, sun, homeB, homeW, tutB, tutW;
+let moon, sun, homeB, homeW, homeT, tutB, tutW, tutT;
 
 function preload() {
     moon = loadImage("moon.png");
     sun = loadImage("sun.png");
     homeB = loadImage('homeB.png');
     homeW = loadImage('homeW.png');
+    homeT = loadImage('homeT.png');
     tutB = loadImage("tutorialB.png");
     tutW = loadImage("tutorialW.png");
+    tutT = loadImage("tutorialT.png");
 }
 
 function x(coord){
@@ -175,14 +177,13 @@ function mousePressed() {
         else night="0";
         sessionStorage.setItem("night", night);
     }
-    
-    // if (mouseX >= x(6.1) && mouseX <= x(5.9) &&
-    //     mouseY >= y(2.35) && mouseY <= y(2.15)) {
-    //     if (night === "0") night="1";
-    //     else night="0";
-    //     sessionStorage.setItem("night", night);
-    // }
 
+    if (!window.location.href.includes("tutorial.html")) {
+        if (mouseX >= x(6.1) && mouseX <= x(5.9) &&
+            mouseY >= y(2.35) && mouseY <= y(2.15)) {
+            window.location.href = "tutorial.html";
+        }
+    }
 }
 
 function mouseDragged() {
@@ -350,19 +351,40 @@ function drawMainUI() {
     strokeWeight(1);
     rect(x(6.6), y(2.35), .2 * M, .2 * M);
     rect(x(6.35), y(2.35), .2 * M, .2 * M);
-    // rect(x(6.1), y(2.35), .2 * M, .2 * M);
+    rect(x(6.1), y(2.35), .2 * M, .2 * M);
 
     if (night==="1") {
-        image(homeB, x(6.6), y(2.35), .2 * M, .2 * M);
-        image(moon, x(6.35), y(2.35), .2 * M, .2 * M);
-        // image(tutB, x(6.1), y(2.35), .2 * M, .2 * M);
+        if (window.location.href.includes("index.html")) {
+            image(homeW, x(6.6), y(2.35), .2 * M, .2 * M);
+        }else {
+            image(homeB, x(6.6), y(2.35), .2 * M, .2 * M);
+        }
+        
+        image(sun, x(6.35), y(2.35), .2 * M, .2 * M);
+
+        if (window.location.href.includes("tutorial.html")) {
+            image(tutW, x(6.1), y(2.35), .2 * M, .2 * M);
+        }else {
+            image(tutB, x(6.1), y(2.35), .2 * M, .2 * M);
+        }
 
     }
     else {
-        image(homeW, x(6.6), y(2.35), .2 * M, .2 * M);
-        image(sun, x(6.35), y(2.35), .2 * M, .2 * M);
-        // image(tutW, x(6.1), y(2.35), .2 * M, .2 * M);
+        if (window.location.href.includes("index.html")) {
+            image(homeT, x(6.6), y(2.35), .2 * M, .2 * M);
+        }else {
+            image(homeW, x(6.6), y(2.35), .2 * M, .2 * M);
+        }
+
+        image(moon, x(6.35), y(2.35), .2 * M, .2 * M);
+
+        if (window.location.href.includes("tutorial.html")) {
+            image(tutT, x(6.1), y(2.35), .2 * M, .2 * M);
+        }else {
+            image(tutW, x(6.1), y(2.35), .2 * M, .2 * M);
+        }
     }
+        
 }
 
 function drawGameUI() {
